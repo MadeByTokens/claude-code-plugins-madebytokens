@@ -6,20 +6,13 @@ A curated marketplace of Claude Code plugins maintained by MadeByTokens. Each pl
 
 To install this plugin marketplace in Claude Code:
 
-1. **Clone this repository** (with submodules):
-   ```bash
-   git clone --recurse-submodules https://github.com/MadeByTokens/claude-code-plugins-madebytokens.git
-   ```
+1. **Add this marketplace to Claude Code**:
 
-2. **Add the marketplace to Claude Code**:
-
-   In Claude Code, run the `/plugin` command and select "Add marketplace". Then enter the path to the marketplace file:
+   In Claude Code, run the `/plugin` command and select "Add marketplace". Then enter:
 
    ```
-   /path/to/claude-code-plugins-madebytokens/.claude-plugin/marketplace.json
+   https://github.com/MadeByTokens/claude-code-plugins-madebytokens.git
    ```
-
-   Replace `/path/to/` with the actual path where you cloned the repository.
 
 3. **Install plugins** from the marketplace by running `/plugin` again and browsing the available plugins.
 
@@ -154,8 +147,6 @@ Note: Manual updates don't automatically update the version in `marketplace.json
 ├── .claude-plugin/
 │   └── marketplace.json    # Plugin registry
 ├── plugins/                # Plugin submodules
-│   ├── bon-cop-bad-cop/
-│   └── resume-helper/
 ├── add-plugin.sh           # Script to add/update plugins
 ├── LICENSE
 └── README.md
