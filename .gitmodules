@@ -1,0 +1,6 @@
+[submodule "plugins/resume-helper"]
+	path = plugins/resume-helper
+	url = git@github.com:MadeByTokens/resume-helper.git
+[submodule "plugins/bon-cop-bad-cop"]
+	path = plugins/bon-cop-bad-cop
+	url = git@github.com:MadeByTokens/bon-cop-bad-cop.git
