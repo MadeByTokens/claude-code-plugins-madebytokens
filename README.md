@@ -1,6 +1,6 @@
 # Claude Code Plugins - MadeByTokens Marketplace
 
-A curated marketplace of Claude Code plugins maintained by MadeByTokens. Each plugin is managed as a git submodule, allowing independent versioning and development.
+A curated marketplace of Claude Code plugins maintained by MadeByTokens. Each plugin's source code is copied directly into this repository for easy distribution.
 
 ## Installation
 
@@ -47,8 +47,8 @@ The script will prompt you for:
 4. **Version** - The plugin version (defaults to `0.1.0`)
 
 The script will then:
-- Add the plugin as a git submodule under `./plugins/`
-- Update the `marketplace.json` file
+- Clone the plugin repository and copy files to `./plugins/`
+- Update the `marketplace.json` file (including the repository URL)
 - Update this README's "Available Plugins" table automatically
 - Optionally commit the changes
 
@@ -56,9 +56,11 @@ The script will then:
 
 If you prefer to add a plugin manually:
 
-1. **Add the submodule**:
+1. **Clone and copy the plugin**:
    ```bash
-   git submodule add <git-url> plugins/<plugin-name>
+   git clone --depth 1 <git-url> /tmp/plugin-temp
+   rm -rf /tmp/plugin-temp/.git
+   mv /tmp/plugin-temp plugins/<plugin-name>
    ```
 
 2. **Update marketplace.json**:
@@ -67,6 +69,7 @@ If you prefer to add a plugin manually:
    {
      "name": "<plugin-name>",
      "source": "./plugins/<plugin-name>",
+     "repository": "https://github.com/...",
      "description": "<description>",
      "version": "<version>"
    }
@@ -80,23 +83,9 @@ If you prefer to add a plugin manually:
 
 4. **Commit the changes**:
    ```bash
-   git add .gitmodules .claude-plugin/marketplace.json README.md plugins/<plugin-name>
+   git add .claude-plugin/marketplace.json README.md plugins/<plugin-name>
    git commit -m "Add plugin: <plugin-name>"
    ```
-
-## Cloning This Repository
-
-When cloning this repository, use `--recurse-submodules` to fetch all plugins:
-
-```bash
-git clone --recurse-submodules <repo-url>
-```
-
-If you've already cloned without submodules:
-
-```bash
-git submodule update --init --recursive
-```
 
 ## Updating Plugins
 
@@ -109,12 +98,13 @@ The easiest way to update a plugin is using the provided script:
 ```
 
 This will:
-- Pull the latest changes from the plugin's remote repository
+- Fetch the latest version from the plugin's remote repository
 - Show recent commits so you can see what changed
+- Replace the local plugin files with the latest version
 - Prompt for the new version number
 - Update the version in `marketplace.json` and this README automatically
 
-After running, commit the changes manually:
+After running, commit the changes:
 ```bash
 git add plugins/<plugin-name> .claude-plugin/marketplace.json README.md
 git commit -m "Update plugin: <plugin-name> to <version>"
@@ -122,23 +112,23 @@ git commit -m "Update plugin: <plugin-name> to <version>"
 
 ### Manual Update
 
-To update all plugins to their latest commits:
+To update a plugin manually:
 
-```bash
-git submodule update --remote --merge
-```
+1. **Fetch and replace the plugin files**:
+   ```bash
+   rm -rf plugins/<plugin-name>
+   git clone --depth 1 <git-url> /tmp/plugin-temp
+   rm -rf /tmp/plugin-temp/.git
+   mv /tmp/plugin-temp plugins/<plugin-name>
+   ```
 
-To update a specific plugin manually:
+2. **Update the version** in `marketplace.json` and `README.md` if needed.
 
-```bash
-cd plugins/<plugin-name>
-git pull origin main
-cd ../..
-git add plugins/<plugin-name>
-git commit -m "Update plugin: <plugin-name>"
-```
-
-Note: Manual updates don't automatically update the version in `marketplace.json` or `README.md`.
+3. **Commit the changes**:
+   ```bash
+   git add plugins/<plugin-name>
+   git commit -m "Update plugin: <plugin-name>"
+   ```
 
 ## Repository Structure
 
@@ -146,7 +136,7 @@ Note: Manual updates don't automatically update the version in `marketplace.json
 .
 ├── .claude-plugin/
 │   └── marketplace.json    # Plugin registry
-├── plugins/                # Plugin submodules
+├── plugins/                # Plugin directories
 ├── add-plugin.sh           # Script to add/update plugins
 ├── LICENSE
 └── README.md

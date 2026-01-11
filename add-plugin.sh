@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# add-plugin.sh - Automate adding plugins as git submodules to the marketplace
+# add-plugin.sh - Automate adding plugins to the marketplace
 
 set -e
 
@@ -36,30 +36,31 @@ show_help() {
     cat << EOF
 Usage: ./add-plugin.sh [OPTIONS]
 
-Automate adding or updating plugins as git submodules in the MadeByTokens marketplace.
+Automate adding or updating plugins in the MadeByTokens marketplace.
 
 MODES:
   Add mode (default):
     1. Prompt you for plugin details (name, git URL, description, version)
     2. Validate the inputs
-    3. Add the plugin as a git submodule under ./plugins/
+    3. Clone the plugin repository and copy files to ./plugins/
     4. Update the marketplace.json file
     5. Update the README.md plugins table
     6. Optionally commit the changes
 
   Update mode (--update):
-    1. Pull latest changes from the plugin's remote repository
+    1. Fetch the latest version from the plugin's remote repository
     2. Prompt for the new version number
-    3. Update the version in marketplace.json
-    4. Update the version in README.md
+    3. Replace local plugin files with the latest version
+    4. Update the version in marketplace.json
+    5. Update the version in README.md
 
 OPTIONS:
   -h, --help              Show this help message and exit
-  -u, --update <name>     Update an existing plugin (pull latest + update version)
+  -u, --update <name>     Update an existing plugin (fetch latest + update version)
 
 REQUIREMENTS:
   - jq (for JSON manipulation)
-  - git (for submodule operations)
+  - git (for cloning repositories)
   - Must be run from the repository root
 
 EXAMPLES:
@@ -272,7 +273,7 @@ update_readme_version() {
     return 0
 }
 
-# Update an existing plugin (pull latest + update versions)
+# Update an existing plugin (fetch latest + update versions)
 update_plugin() {
     local plugin_name="$1"
 
@@ -292,24 +293,37 @@ update_plugin() {
         exit 1
     fi
 
-    # Get current version
+    # Get current version and repository URL
     local current_version=$(jq -r --arg name "$plugin_name" '.plugins[] | select(.name == $name) | .version' "$MARKETPLACE_FILE")
-    echo "Plugin: $plugin_name"
-    echo "Current version: $current_version"
-    echo ""
+    local git_url=$(jq -r --arg name "$plugin_name" '.plugins[] | select(.name == $name) | .repository' "$MARKETPLACE_FILE")
 
-    # Pull latest changes
-    print_info "Pulling latest changes from remote..."
-    if ! git -C "plugins/$plugin_name" pull origin HEAD; then
-        print_error "Failed to pull latest changes."
+    if [[ -z "$git_url" || "$git_url" == "null" ]]; then
+        print_error "No repository URL found for plugin '$plugin_name' in marketplace.json"
+        echo "Please add a 'repository' field to the plugin entry."
         exit 1
     fi
-    print_success "Latest changes pulled successfully."
+
+    echo "Plugin: $plugin_name"
+    echo "Current version: $current_version"
+    echo "Repository: $git_url"
+    echo ""
+
+    # Create temp directory for cloning
+    local temp_dir=$(mktemp -d)
+    trap "rm -rf '$temp_dir'" EXIT
+
+    # Clone latest version
+    print_info "Fetching latest version from remote..."
+    if ! git clone --depth 1 "$git_url" "$temp_dir/plugin" 2>&1; then
+        print_error "Failed to clone repository."
+        exit 1
+    fi
+    print_success "Latest version fetched successfully."
     echo ""
 
     # Show recent commits
     print_info "Recent commits:"
-    git -C "plugins/$plugin_name" log --oneline -5
+    git -C "$temp_dir/plugin" log --oneline -5
     echo ""
 
     # Prompt for new version
@@ -326,15 +340,18 @@ update_plugin() {
     echo "New version:  $NEW_VERSION"
     echo ""
 
-    read -rp "Update version in marketplace.json and README.md? (y/n): " CONFIRM
+    read -rp "Update plugin files and version? (y/n): " CONFIRM
     if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
-        print_warning "Version update skipped."
-        echo ""
-        print_warning "Remember to commit the submodule update manually:"
-        echo "  git add plugins/$plugin_name"
-        echo "  git commit -m \"Update plugin: $plugin_name\""
+        print_warning "Update cancelled."
         exit 0
     fi
+
+    # Remove old plugin directory and copy new files
+    print_info "Updating plugin files..."
+    rm -rf "plugins/$plugin_name"
+    rm -rf "$temp_dir/plugin/.git"
+    mv "$temp_dir/plugin" "plugins/$plugin_name"
+    print_success "Plugin files updated successfully."
 
     # Update marketplace.json
     print_info "Updating marketplace.json..."
@@ -395,7 +412,7 @@ prompt_optional() {
 # Main function for adding a new plugin
 add_plugin() {
     echo ""
-    print_info "=== MadeByTokens Plugin Submodule Manager ==="
+    print_info "=== MadeByTokens Plugin Manager ==="
     echo ""
 
     # Collect plugin information
@@ -448,24 +465,40 @@ add_plugin() {
 
     echo ""
 
-    # Add git submodule
-    print_info "Adding git submodule..."
-    if ! git submodule add "$GIT_URL" "plugins/$PLUGIN_NAME"; then
-        print_error "Failed to add git submodule."
+    # Create temp directory for cloning
+    local temp_dir=$(mktemp -d)
+    trap "rm -rf '$temp_dir'" EXIT
+
+    # Clone the repository
+    print_info "Cloning repository..."
+    if ! git clone --depth 1 "$GIT_URL" "$temp_dir/plugin" 2>&1; then
+        print_error "Failed to clone repository."
         exit 1
     fi
-    print_success "Git submodule added successfully."
+
+    # Remove .git directory and move to plugins
+    rm -rf "$temp_dir/plugin/.git"
+
+    # Ensure plugins directory exists
+    mkdir -p plugins
+
+    mv "$temp_dir/plugin" "plugins/$PLUGIN_NAME"
+    print_success "Plugin files copied successfully."
 
     # Update marketplace.json
     print_info "Updating marketplace.json..."
+
+    # Convert git URL to HTTPS for storage
+    local https_url=$(git_url_to_https "$GIT_URL")
 
     # Create new plugin entry and add to plugins array
     TEMP_FILE=$(mktemp)
     jq --arg name "$PLUGIN_NAME" \
        --arg source "./plugins/$PLUGIN_NAME" \
+       --arg repo "$https_url" \
        --arg desc "$DESCRIPTION" \
        --arg ver "$VERSION" \
-       '.plugins += [{"name": $name, "source": $source, "description": $desc, "version": $ver}]' \
+       '.plugins += [{"name": $name, "source": $source, "repository": $repo, "description": $desc, "version": $ver}]' \
        "$MARKETPLACE_FILE" > "$TEMP_FILE"
 
     if [[ $? -eq 0 ]]; then
@@ -489,12 +522,12 @@ add_plugin() {
     read -rp "Commit these changes? (y/n): " COMMIT_CONFIRM
     if [[ "$COMMIT_CONFIRM" == "y" || "$COMMIT_CONFIRM" == "Y" ]]; then
         print_info "Committing changes..."
-        git add .gitmodules "$MARKETPLACE_FILE" "$README_FILE" "plugins/$PLUGIN_NAME"
+        git add "$MARKETPLACE_FILE" "$README_FILE" "plugins/$PLUGIN_NAME"
         git commit -m "Add plugin: $PLUGIN_NAME"
         print_success "Changes committed."
     else
         print_warning "Changes not committed. Remember to commit manually:"
-        echo "  git add .gitmodules $MARKETPLACE_FILE $README_FILE plugins/$PLUGIN_NAME"
+        echo "  git add $MARKETPLACE_FILE $README_FILE plugins/$PLUGIN_NAME"
         echo "  git commit -m \"Add plugin: $PLUGIN_NAME\""
     fi
 
