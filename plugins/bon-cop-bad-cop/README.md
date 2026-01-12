@@ -55,10 +55,10 @@ Here are simple requirements to test the plugin, ordered by complexity:
 
 ### With Options
 ```bash
-# Force Python with higher mutation threshold
-/bon-cop-bad-cop:tdd-loop "Write a function is_prime(n)" --language python --mutation-threshold 0.9
+# Override auto-detected language with higher mutation threshold
+/bon-cop-bad-cop:tdd-loop "Write a function is_prime(n)" --language rust --mutation-threshold 0.9
 
-# JavaScript with more iterations allowed
+# Override to JavaScript with more iterations allowed
 /bon-cop-bad-cop:tdd-loop "Write a function reverseString(s)" --language javascript --max-iterations 20
 ```
 
@@ -77,7 +77,7 @@ Here are simple requirements to test the plugin, ordered by complexity:
 - `--max-iterations N` - Maximum iterations (default: 15)
 - `--mutation-threshold 0.85` - Required mutation score (default: 0.8)
 - `--test-scope unit|integration|both` - Test scope (default: unit)
-- `--language python|javascript|rust` - Force language (default: auto-detect)
+- `--language LANG` - Override auto-detection (python, javascript, typescript, rust, go, java, ruby)
 
 ### Using a Requirement File
 
@@ -190,6 +190,16 @@ flowchart LR
 
 ---
 
+## Philosophy
+
+**Why adversarial?** Single-agent coding tends to "cheat" by writing tests that match the implementation rather than the spec. Three agents with different goals keep each other honest.
+
+**Why isolation?** If the Code Writer sees the requirement, it might implement shortcuts that pass tests but miss intent. By only seeing tests, it must implement *behavior*, not just keywords.
+
+**Why mutation testing?** Passing tests prove nothing if the tests themselves are weak. Mutation testing catches test suites that would pass broken code.
+
+---
+
 ## Repository Structure
 
 ```
@@ -205,12 +215,7 @@ bon-cop-bad-cop/
 │   ├── tdd-status.md
 │   ├── cancel-tdd.md
 │   └── help.md
-├── tools/                    # Helper scripts
-│   ├── detect_cheating.py
-│   ├── detect_flaky.py
-│   └── strip_comments.py
-├── README.md
-└── QUICKSTART.md
+└── README.md
 ```
 
 ---
@@ -222,74 +227,28 @@ bon-cop-bad-cop/
 - **Cheating Detection** - Identifies hardcoded/lookup table implementations
 - **Flakiness Detection** - Runs tests multiple times
 - **State Persistence** - Loop state saved in `.tdd-state.json`
+- **Requirement Grounding** - Original requirement re-injected every iteration to prevent drift
+- **Trail Log** - Detailed audit log in `.tdd-loop.log` for debugging and verification
 
-## Helper Tools
+## Built-in Capabilities
 
-The `plugins/bon-cop-bad-cop/tools/` directory contains standalone utilities that enforce the adversarial integrity of the TDD loop. These can also be run independently outside the plugin.
+The following capabilities are embedded directly in the agents and commands (no external dependencies):
 
-### detect_cheating.py
-
-Scans implementation code for patterns indicating the Code Writer is "gaming" the tests rather than implementing genuine logic.
-
-**Patterns detected:**
+### Cheating Detection (in Reviewer)
+Analyzes implementation code for patterns indicating gaming rather than genuine logic:
 - Hardcoded returns matching test expectations
 - Lookup tables with test inputs as keys
-- Test environment detection (`pytest` in `sys.modules`, `CI` env vars)
-- Excessive conditional chains matching specific test cases
+- Test environment detection (`if 'pytest' in sys.modules`)
+- Excessive conditional chains
 
-**Usage:**
-```bash
-# Human-readable output
-python tools/detect_cheating.py implementation.py test_implementation.py
+### Flaky Test Detection (in Reviewer)
+Runs test suite 3 times and compares results. Any test with inconsistent outcomes is flagged as flaky and must be fixed before proceeding.
 
-# JSON output for programmatic use
-python tools/detect_cheating.py implementation.py test_implementation.py --json
-```
+### Comment Stripping (in tdd-loop orchestrator)
+Removes comments and docstrings from test files before Code Writer sees them. Supports Python, JavaScript/TypeScript, Rust, Go, Java, and C/C++. This ensures Code Writer derives intent from test *behavior*, not explanatory comments.
 
-**Why it matters:** Without this, the Code Writer could pass all tests with `if input == 2: return 5` style cheating instead of real logic.
-
----
-
-### detect_flaky.py
-
-Runs test suites multiple times to identify non-deterministic tests. Flaky tests must be fixed before mutation testing can provide meaningful results.
-
-**Supported frameworks:** pytest, Jest, Cargo (auto-detected)
-
-**Usage:**
-```bash
-# Run tests 3 times (default), auto-detect framework
-python tools/detect_flaky.py tests/
-
-# Run 5 times with explicit framework
-python tools/detect_flaky.py tests/ --runs 5 --framework pytest
-
-# JSON output
-python tools/detect_flaky.py tests/ --json
-```
-
-**Why it matters:** A flaky test that passes 2/3 times will cause false positives in mutation testing and waste iterations.
-
----
-
-### strip_comments.py
-
-Removes comments and docstrings from test files before the Code Writer sees them. This is a key anti-collusion measure.
-
-**Supported languages:** Python, JavaScript/TypeScript
-
-**Usage:**
-```bash
-# Print stripped code to stdout
-python tools/strip_comments.py test_example.py
-
-# Write to file
-python tools/strip_comments.py test_example.py test_example_stripped.py
-```
-
-**Why it matters:** The Code Writer should derive intent from test *behavior*, not from explanatory comments. If the Test Writer writes `# should handle negative numbers`, the Code Writer might just add a negative number check without understanding why. Stripping comments forces the Code Writer to understand the tests through their assertions.
-
----
+### Requirement Alignment Check (in Reviewer)
+Every iteration, the Reviewer verifies that tests still align with the original requirement. If tests have drifted beyond scope, the loop corrects back to the original requirement.
 
 ## Requirements
 

@@ -20,8 +20,8 @@ To install this plugin marketplace in Claude Code:
 
 | Plugin | Description | Repository | Version |
 |--------|-------------|------------|---------|
-| [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.1.0 |
-| [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.1.0 |
+| [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.6.0 |
+| [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.4.0 |
 
 ## Adding a New Plugin
 
