@@ -20,8 +20,8 @@ To install this plugin marketplace in Claude Code:
 
 | Plugin | Description | Repository | Version |
 |--------|-------------|------------|---------|
-| [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.6.0 |
-| [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.4.0 |
+| [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.7.1 |
+| [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.5.1 |
 
 ## Adding a New Plugin
 
@@ -40,17 +40,15 @@ The easiest way to add a new plugin is using the provided script:
 ./add-plugin.sh
 ```
 
-The script will prompt you for:
-1. **Plugin name** - A unique identifier (e.g., `my-plugin`)
-2. **Git repository URL** - The plugin's git repo (SSH or HTTPS)
-3. **Description** - A brief description of what the plugin does
-4. **Version** - The plugin version (defaults to `0.1.0`)
-
-The script will then:
-- Clone the plugin repository and copy files to `./plugins/`
-- Update the `marketplace.json` file (including the repository URL)
-- Update this README's "Available Plugins" table automatically
-- Optionally commit the changes
+The script will:
+1. Prompt for **plugin name** and **git repository URL**
+2. Clone the repository
+3. **Auto-extract** description and version from `.claude-plugin/plugin.json`
+   - Only prompts for these if not found in the plugin's metadata
+4. Show a summary and ask for confirmation
+5. Copy plugin files to `./plugins/`
+6. Update `marketplace.json` and this README automatically
+7. Optionally commit the changes
 
 ### Manual Addition
 
@@ -99,9 +97,11 @@ The easiest way to update a plugin is using the provided script:
 
 This will:
 - Fetch the latest version from the plugin's remote repository
+- **Auto-extract** the version from `.claude-plugin/plugin.json` and use it as the default
+  - Falls back to the current marketplace version if not found
 - Show recent commits so you can see what changed
+- Prompt for confirmation (press Enter to accept the auto-detected version)
 - Replace the local plugin files with the latest version
-- Prompt for the new version number
 - Update the version in `marketplace.json` and this README automatically
 
 After running, commit the changes:

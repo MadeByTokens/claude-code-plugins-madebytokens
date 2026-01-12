@@ -40,19 +40,22 @@ Automate adding or updating plugins in the MadeByTokens marketplace.
 
 MODES:
   Add mode (default):
-    1. Prompt you for plugin details (name, git URL, description, version)
-    2. Validate the inputs
-    3. Clone the plugin repository and copy files to ./plugins/
-    4. Update the marketplace.json file
-    5. Update the README.md plugins table
-    6. Optionally commit the changes
+    1. Prompt for plugin name and git URL
+    2. Clone the plugin repository
+    3. Auto-extract description and version from .claude-plugin/plugin.json
+       (only prompts if not found in plugin.json)
+    4. Show summary and confirm
+    5. Copy plugin files to ./plugins/
+    6. Update marketplace.json and README.md
+    7. Optionally commit the changes
 
   Update mode (--update):
     1. Fetch the latest version from the plugin's remote repository
-    2. Prompt for the new version number
-    3. Replace local plugin files with the latest version
-    4. Update the version in marketplace.json
-    5. Update the version in README.md
+    2. Auto-extract version from .claude-plugin/plugin.json
+       (uses extracted version as default, falls back to current marketplace version)
+    3. Prompt for confirmation
+    4. Replace local plugin files with the latest version
+    5. Update the version in marketplace.json and README.md
 
 OPTIONS:
   -h, --help              Show this help message and exit
@@ -319,6 +322,21 @@ update_plugin() {
         exit 1
     fi
     print_success "Latest version fetched successfully."
+
+    # Extract version from cloned plugin's plugin.json
+    local plugin_json="$temp_dir/plugin/.claude-plugin/plugin.json"
+    local extracted_version=""
+
+    if [[ -f "$plugin_json" ]]; then
+        extracted_version=$(jq -r '.version // empty' "$plugin_json" 2>/dev/null)
+        if [[ -n "$extracted_version" ]]; then
+            print_success "Found version in plugin.json: $extracted_version"
+        fi
+    fi
+
+    # Use extracted version if available, otherwise fall back to marketplace version
+    local default_version="${extracted_version:-$current_version}"
+
     echo ""
 
     # Show recent commits
@@ -327,9 +345,9 @@ update_plugin() {
     echo ""
 
     # Prompt for new version
-    read -rp "New version [$current_version]: " NEW_VERSION
+    read -rp "New version [$default_version]: " NEW_VERSION
     if [[ -z "$NEW_VERSION" ]]; then
-        NEW_VERSION="$current_version"
+        NEW_VERSION="$default_version"
     fi
 
     # Confirm
@@ -415,7 +433,7 @@ add_plugin() {
     print_info "=== MadeByTokens Plugin Manager ==="
     echo ""
 
-    # Collect plugin information
+    # Collect basic plugin information
     echo "Please provide the following information for the new plugin:"
     echo ""
 
@@ -435,17 +453,60 @@ add_plugin() {
         fi
     done
 
-    # Description
-    DESCRIPTION=""
-    while [[ -z "$DESCRIPTION" ]]; do
-        read -rp "Description: " DESCRIPTION
-        if [[ -z "$DESCRIPTION" ]]; then
-            print_warning "Description is required."
-        fi
-    done
+    echo ""
 
-    # Version (optional with default)
-    VERSION=$(prompt_optional "Version" "0.1.0")
+    # Create temp directory for cloning
+    local temp_dir=$(mktemp -d)
+    trap "rm -rf '$temp_dir'" EXIT
+
+    # Clone the repository first to extract metadata
+    print_info "Cloning repository..."
+    if ! git clone --depth 1 "$GIT_URL" "$temp_dir/plugin" 2>&1; then
+        print_error "Failed to clone repository."
+        exit 1
+    fi
+    print_success "Repository cloned successfully."
+
+    # Try to extract metadata from .claude-plugin/plugin.json
+    local plugin_json="$temp_dir/plugin/.claude-plugin/plugin.json"
+    local extracted_version=""
+    local extracted_description=""
+
+    if [[ -f "$plugin_json" ]]; then
+        print_info "Found plugin.json, extracting metadata..."
+        extracted_version=$(jq -r '.version // empty' "$plugin_json" 2>/dev/null)
+        extracted_description=$(jq -r '.description // empty' "$plugin_json" 2>/dev/null)
+
+        if [[ -n "$extracted_version" ]]; then
+            print_success "  Version: $extracted_version"
+        fi
+        if [[ -n "$extracted_description" ]]; then
+            print_success "  Description: $extracted_description"
+        fi
+    else
+        print_warning "No .claude-plugin/plugin.json found, will prompt for metadata."
+    fi
+
+    echo ""
+
+    # Use extracted values or prompt for missing ones
+    if [[ -n "$extracted_description" ]]; then
+        DESCRIPTION="$extracted_description"
+    else
+        DESCRIPTION=""
+        while [[ -z "$DESCRIPTION" ]]; do
+            read -rp "Description: " DESCRIPTION
+            if [[ -z "$DESCRIPTION" ]]; then
+                print_warning "Description is required."
+            fi
+        done
+    fi
+
+    if [[ -n "$extracted_version" ]]; then
+        VERSION="$extracted_version"
+    else
+        VERSION=$(prompt_optional "Version" "0.1.0")
+    fi
 
     # Show summary and confirm
     echo ""
@@ -464,17 +525,6 @@ add_plugin() {
     fi
 
     echo ""
-
-    # Create temp directory for cloning
-    local temp_dir=$(mktemp -d)
-    trap "rm -rf '$temp_dir'" EXIT
-
-    # Clone the repository
-    print_info "Cloning repository..."
-    if ! git clone --depth 1 "$GIT_URL" "$temp_dir/plugin" 2>&1; then
-        print_error "Failed to clone repository."
-        exit 1
-    fi
 
     # Remove .git directory and move to plugins
     rm -rf "$temp_dir/plugin/.git"
