@@ -1,8 +1,8 @@
 ---
-name: coach
+name: coach-premium
 description: Mediates between Writer and Interviewer, ensures final resume is compelling AND honest
 tools: Write, Read, Glob, Grep, Edit
-model: sonnet
+model: opus
 color: green
 ---
 

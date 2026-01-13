@@ -20,8 +20,8 @@ Generate an interview preparation document based on a resume.
 
 1. If path provided, read the resume file
 2. If no path provided:
-   - Read `.resume-state.json`
-   - Extract `currentResume` from state
+   - Read `working/state.json`
+   - If state exists and has completed, read `working/writer/output.md`
    - If no state or no resume, ask user for resume path
 
 ### Step 2: Analyze Resume
@@ -47,7 +47,7 @@ Organize questions by category:
 
 ### Step 3: Generate Prep Document
 
-Create `interview_prep.md` with the following structure:
+Create `working/output/interview_prep.md` with the following structure:
 
 ```markdown
 # Interview Preparation Guide
@@ -174,7 +174,7 @@ Before the interview:
 
 ### Step 4: Save and Report
 
-1. Write `interview_prep.md` to current directory
+1. Write `working/output/interview_prep.md`
 2. Display summary:
 
 ```
@@ -182,7 +182,7 @@ Before the interview:
 INTERVIEW PREP GENERATED
 ═══════════════════════════════════════════════════
 
-Output: interview_prep.md
+Output: working/output/interview_prep.md
 
 Contents:
 - X experience verification questions
@@ -197,7 +197,7 @@ Top 3 Questions to Practice:
 2. [Second most likely]
 3. [Third most likely]
 
-Review interview_prep.md for full preparation guide.
+Review working/output/interview_prep.md for full preparation guide.
 ═══════════════════════════════════════════════════
 ```
 
@@ -206,3 +206,4 @@ Review interview_prep.md for full preparation guide.
 - This command can be run independently of the resume loop
 - Works best with resumes that have specific, quantified achievements
 - Generated questions are based on what a skeptical interviewer would ask
+- Output is saved to `working/output/interview_prep.md`

@@ -1,7 +1,7 @@
 ---
 name: check-ats-compatibility
 description: Check a resume for ATS compatibility
-tools: Read
+tools: Read, Write
 model: haiku
 ---
 
@@ -9,12 +9,37 @@ model: haiku
 
 This agent analyzes resume content for ATS (Applicant Tracking System) compatibility, including formatting issues, keyword matching, section detection, and page limit compliance.
 
-## Your Task
+## FILE-BASED I/O PROTOCOL
 
-You will receive a prompt containing:
-- `resume_file_path` (required): Path to the resume file (usually `resume_draft.md`)
-- `job_description` (optional): The job description CONTENT directly in the prompt (not a file path). May say "No job description provided" if not available.
-- `max_pages` (optional): Page limit (1, 2, or 3) for length checking
+**You MUST read inputs from files and write outputs to files.**
+
+### Input Files (READ these)
+| File | Description |
+|------|-------------|
+| `working/writer/output.md` | The resume to analyze |
+| `working/inputs/job_description.md` | Target job description (may not exist) |
+| `working/state.json` | Contains maxPages and maxWords settings |
+
+### Output Files (WRITE these)
+| File | Description |
+|------|-------------|
+| `working/analysis/ats_compatibility.md` | Full ATS analysis with score |
+
+### Execution Steps
+
+1. **Read inputs:**
+   ```
+   Read("working/writer/output.md")
+   Read("working/inputs/job_description.md")  # May not exist
+   Read("working/state.json")
+   ```
+
+2. **Analyze for ATS compatibility**
+
+3. **Write output:**
+   ```
+   Write("working/analysis/ats_compatibility.md", <analysis>)
+   ```
 
 ## Page-to-Word Limits
 
@@ -24,7 +49,7 @@ You will receive a prompt containing:
 | 2 | 900 |
 | 3 | 1350 |
 
-If no max_pages specified, use general guidelines: ideal is 400-800 words, minimum 200 words.
+Get the maxPages value from `working/state.json`. If not found, use 450 words as default.
 
 ## Section Detection
 
@@ -75,7 +100,7 @@ If no max_pages specified, use general guidelines: ideal is 400-800 words, minim
 
 ## Keyword Extraction (When Job Description Provided)
 
-Extract keywords from the job description in these categories:
+If `working/inputs/job_description.md` exists, extract keywords in these categories:
 
 ### Technical Keywords
 **Programming Languages:** Python, Java, JavaScript, TypeScript, Go, Rust, C++, C#, Ruby, PHP, Swift, Kotlin, Scala, R, MATLAB, SQL, Bash, PowerShell, Perl, Haskell, Elixir, Clojure
@@ -97,35 +122,6 @@ Leadership, communication, teamwork, collaboration, problem-solving, mentoring, 
 ### Certifications
 AWS Certified, Azure Certified, GCP Certified, PMP, CSM, CISSP, CKA, CKAD, TOGAF, ITIL, CPA, CFA, Six Sigma, CompTIA, Oracle Certified, Salesforce Certified
 
-### Degrees
-Bachelor's, Master's, PhD, MBA, B.S., M.S., B.A., M.A., Associate's, Doctorate
-
-## Instructions
-
-1. **Read the resume file** using the Read tool (usually `resume_draft.md`)
-2. **Check if job description was provided** in the prompt (look for "Job Description" section in your prompt - content will be included directly, NOT as a file path)
-3. **Count words** in the resume (split by whitespace)
-4. **Check page limit** if max_pages provided:
-   - Calculate: word_limit = max_pages x 450
-   - Determine if within limit, slightly over (<10%), moderately over (10-20%), or significantly over (>20%)
-5. **Detect sections** by looking for markdown headers (`#`, `##`, `###`) or ALL CAPS headings
-6. **Check for required sections** (experience, education, skills)
-7. **Validate contact info:**
-   - Email: look for `@` with domain pattern
-   - Phone: look for digit patterns like `(XXX) XXX-XXXX` or `XXX-XXX-XXXX`
-   - LinkedIn: look for `linkedin.com`
-8. **Check formatting:**
-   - Tables: look for `|` patterns
-   - Images: look for `![`
-   - Count bullet points: lines starting with `-` or `*`
-9. **Check dates:** Look for patterns like "Jan 2020", "January 2020", "01/2020", "2020-Present", "2020 - 2021"
-10. **If JD content was provided in the prompt:**
-    - Extract keywords from the JD content using categories above
-    - Check which keywords appear in resume
-    - Calculate match rate
-11. **Calculate ATS score** using formula below
-12. **Format output** according to Output Protocol
-
 ## Scoring Formula
 
 ```
@@ -144,9 +140,9 @@ Keyword penalty (if JD provided):
 Final Score = max(0, Base Score - all_deductions)
 ```
 
-## Output Protocol
+## Output Format
 
-Return your analysis in this exact format:
+Write to `working/analysis/ats_compatibility.md`:
 
 ```markdown
 ## ATS Compatibility Analysis
@@ -191,8 +187,5 @@ If no JD was provided, omit the "Keyword Analysis" section entirely.
 ## Error Handling
 
 If the resume file cannot be read:
-1. Report the error clearly: "Error: Could not read resume file at [path]"
-2. Suggest checking the file path
-3. Stop analysis - cannot proceed without resume
-
-Note: Job description content is provided directly in the prompt, so there is no JD file to read.
+1. Report the error clearly: "Error: Could not read resume file at working/writer/output.md"
+2. Write an error report to the output file

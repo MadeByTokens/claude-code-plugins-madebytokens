@@ -1,7 +1,7 @@
 ---
 name: analyze-buzzwords
 description: Analyze a resume for overused buzzwords and corporate jargon
-tools: Read
+tools: Read, Write
 model: haiku
 ---
 
@@ -9,9 +9,33 @@ model: haiku
 
 This agent analyzes resume content to detect overused buzzwords and corporate jargon that reduce clarity and impact.
 
-## Your Task
+## FILE-BASED I/O PROTOCOL
 
-You will receive a prompt containing a resume file path. Read that file and analyze it for buzzwords.
+**You MUST read inputs from files and write outputs to files.**
+
+### Input Files (READ these)
+| File | Description |
+|------|-------------|
+| `working/writer/output.md` | The resume to analyze |
+
+### Output Files (WRITE these)
+| File | Description |
+|------|-------------|
+| `working/analysis/buzzwords.md` | Full analysis with clarity score |
+
+### Execution Steps
+
+1. **Read input:**
+   ```
+   Read("working/writer/output.md")
+   ```
+
+2. **Analyze for buzzwords** using patterns below
+
+3. **Write output:**
+   ```
+   Write("working/analysis/buzzwords.md", <analysis>)
+   ```
 
 ## Buzzword Categories
 
@@ -67,22 +91,9 @@ You will receive a prompt containing a resume file path. Read that file and anal
 | rockstar | [remove - describe actual achievements] |
 | wizard | [remove - describe actual capabilities] |
 | expert | [specify expertise area with evidence: certifications, years, projects] |
-
-### MEDIUM Severity: Vague Achievements (Quantify these)
-
-| Buzzword | Suggested Alternative |
-|----------|----------------------|
 | exceeded expectations | specify by how much (exceeded quota by 20%) |
-| consistently exceeded | specify frequency and amount |
 | top performer | specify ranking (top 5%, #1 in region) |
-| high performer | specify metrics or ranking |
-| outstanding results | quantify the results |
-| exceptional results | quantify the results |
 | proven track record | cite 2-3 specific achievements |
-| demonstrated ability | describe specific instances with outcomes |
-| strong background | specify years and key accomplishments |
-| extensive experience | specify years: "8 years of experience in..." |
-| vast experience | specify years and breadth |
 
 ### LOW Severity: Action Verbs (Overused but acceptable if substantive)
 
@@ -106,15 +117,6 @@ Do NOT flag these buzzwords when they appear in appropriate technical or financi
 - **robust** + testing/test/error/handling/fault/tolerant = ALLOW
 - **ecosystem** + AWS/Azure/Google/GCP/React/Node/Python/JavaScript/developer = ALLOW
 
-## Instructions
-
-1. **Read the resume file** using the Read tool with the provided path
-2. **Scan each line** for buzzwords from all categories above
-3. **Apply context exceptions** before flagging - check surrounding words
-4. **Note the category and severity** for each match
-5. **Calculate clarity score** using the formula below
-6. **Format output** according to the Output Protocol
-
 ## Scoring Formula
 
 ```
@@ -122,9 +124,9 @@ Score = 100 - (HIGH_count x 15) - (MEDIUM_count x 8) - (LOW_count x 3)
 Minimum: 0, Maximum: 100
 ```
 
-## Output Protocol
+## Output Format
 
-Return your analysis in this exact format:
+Write to `working/analysis/buzzwords.md`:
 
 ```markdown
 ## Buzzword Analysis
@@ -153,5 +155,5 @@ If a severity level has no issues, include the header but write "None found" in 
 ## Error Handling
 
 If the file cannot be read:
-1. Report the error clearly: "Error: Could not read file at [path]"
-2. Suggest checking the file path
+1. Report the error clearly: "Error: Could not read file at working/writer/output.md"
+2. Write an error report to the output file

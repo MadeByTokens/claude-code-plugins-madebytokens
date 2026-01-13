@@ -1,15 +1,22 @@
 ---
 description: Start adversarial TDD loop with three agents
-allowed-tools: Write, Read, Glob, Edit, Bash, Task, TodoWrite
+allowed-tools: Write, Read, Glob, Edit, Bash, Task
 ---
 
 # /tdd-loop Command
 
 When the user runs `/tdd-loop "<requirement>" [options]` or `/tdd-loop --requirement-file <path> [options]`, follow these instructions:
 
-## Trail Log (REQUIRED)
+## Trail Log (REQUIRED) - Primary Record
 
-**Maintain a detailed log in `.tdd-loop.log` throughout the entire loop.**
+**The `.tdd-loop.log` file is the AUTHORITATIVE record of all loop activity.**
+
+This is critical for context management:
+- **Agents write verbose output here**, not to their responses
+- **Full mutation survivor details** go here, not in state file
+- **Full feedback text** goes here
+- **Archived history entries** go here when truncated from state
+- The state file and agent responses contain only summaries
 
 Every significant action MUST be logged with timestamp. Use the Write tool to append entries.
 
@@ -21,26 +28,31 @@ Every significant action MUST be logged with timestamp. Use the Write tool to ap
 **What to log:**
 | Event | Log Entry |
 |-------|-----------|
+| Plugin version | `[INIT] Bon Cop Bad Cop v{version}` |
 | Loop start | `[INIT] TDD loop started. Requirement: "<first 100 chars>..."` |
 | Language detected | `[INIT] Language detected: {language} ({testFramework})` |
-| State file created | `[INIT] State file created: .tdd-state.json` |
+| State file created | `[INIT] State file created: .tdd-working/state.json` |
 | Phase start | `[ITER {n}] Starting phase: {WRITING_TESTS\|WRITING_CODE\|REVIEWING}` |
 | Agent invoked | `[ITER {n}] Invoking {agent} agent...` |
 | Agent completed | `[ITER {n}] {agent} completed. Files: {list}` |
+| Agent verbose output | `[ITER {n}] [{agent}] {detailed analysis, reasoning, progress}` |
 | Tests run | `[ITER {n}] Tests executed: {passed}/{total} passed` |
 | Flaky detected | `[ITER {n}] Flaky tests found: {list}` |
 | Cheating detected | `[ITER {n}] Cheating patterns found: {list}` |
 | Mutation score | `[ITER {n}] Mutation score: {score}% ({killed}/{total} mutants)` |
-| Verdict issued | `[ITER {n}] Verdict: {verdict}. Feedback: "{summary}"` |
+| Mutation survivors | `[ITER {n}] Surviving mutants: {full list of survivors}` |
+| Verdict issued | `[ITER {n}] Verdict: {verdict}. Feedback: "{full feedback text}"` |
 | Iteration complete | `[ITER {n}] Iteration complete. Next phase: {phase}` |
+| History archived | `[HISTORY] Archived iteration {n}: verdict={v}, mutationScore={s}, survivors=[...]` |
 | Loop complete | `[COMPLETE] Loop finished: {reason}. Total iterations: {n}` |
 | Error | `[ERROR] {error description}` |
 
 **Example log:**
 ```
+[2024-01-15 10:30:00] [INIT] Bon Cop Bad Cop v0.6.0
 [2024-01-15 10:30:00] [INIT] TDD loop started. Requirement: "Write a function is_prime(n) that returns True if n is prime"
 [2024-01-15 10:30:01] [INIT] Language detected: python (pytest)
-[2024-01-15 10:30:02] [INIT] State file created: .tdd-state.json
+[2024-01-15 10:30:02] [INIT] State file created: .tdd-working/state.json
 [2024-01-15 10:30:03] [ITER 1] Starting phase: WRITING_TESTS
 [2024-01-15 10:30:04] [ITER 1] Invoking test-writer agent...
 [2024-01-15 10:31:15] [ITER 1] test-writer completed. Files: test_is_prime.py
@@ -60,6 +72,24 @@ Every significant action MUST be logged with timestamp. Use the Write tool to ap
 ```
 
 **IMPORTANT:** Append to the log file, never overwrite. If the file doesn't exist, create it.
+
+## Context Budget Awareness
+
+This loop can run for many iterations (up to 15 by default). To prevent context exhaustion:
+
+1. **Agent responses are minimal** - Detailed output goes to `.tdd-loop.log`, not responses
+2. **History is truncated to 3 iterations** - Older iterations are archived in the log file
+3. **State file stays small** - Only current state and recent history
+4. **If you need historical details** - Read from `.tdd-loop.log`
+
+**Key principle:** The state file contains *current state*; the log file contains *complete history*.
+
+## Step 0: Initialize
+
+Display: "🎭 Bon Cop Bad Cop v0.6.0"
+Log to `.tdd-loop.log`: `[INIT] Bon Cop Bad Cop v0.6.0`
+
+**Note:** When bumping the plugin version, update both `.claude-plugin/plugin.json` AND this file.
 
 ## Step 1: Parse User Input
 
@@ -167,22 +197,51 @@ Display: "✅ Language confirmed: [Language] (using [testFramework])"
 **IMPORTANT:** First, provide feedback that you're checking:
 - Display: "🔍 Checking for existing TDD loops..."
 
-Read `.tdd-state.json` if it exists. If `active: true`:
+Read `.tdd-working/state.json` if it exists. If `active: true`:
 - Display: "⚠️  An active TDD loop already exists. Use `/cancel-tdd` to cancel it first, or `/tdd-status` to check its status."
 - STOP - do not continue.
 
 If no active loop, display: "✅ No active loops found. Initializing new TDD loop..."
 
-## Step 3: Initialize Loop State
+## Step 3: Create Working Directory and Initialize State
 
-Create `.tdd-state.json` with this structure:
+### 3.1 Create Working Directory Structure
+
+Create the `.tdd-working/` directory with the following structure:
+
+```
+.tdd-working/
+├── inputs/
+│   └── requirement.md          # Original requirement (written in 3.2)
+├── test-writer/
+│   └── status.md               # Agent writes: "DONE" or "BLOCKED: reason"
+├── code-writer/
+│   └── status.md               # Agent writes: "DONE" or "BLOCKED: reason"
+└── reviewer/
+    ├── verdict.md              # Agent writes: "ALL_PASS", "WEAK_TESTS", or "WEAK_CODE"
+    └── feedback.md             # Agent writes: detailed feedback for next iteration
+```
+
+Use Bash to create the directories:
+```bash
+mkdir -p .tdd-working/inputs .tdd-working/test-writer .tdd-working/code-writer .tdd-working/reviewer
+```
+
+### 3.2 Write Requirement File
+
+Write the requirement to `.tdd-working/inputs/requirement.md`:
+- This is the ONLY copy of the requirement
+- Agents will read from this file, NOT from their prompts
+
+### 3.3 Initialize State File
+
+Create `.tdd-working/state.json` with this structure:
 
 ```json
 {
   "active": true,
   "iteration": 1,
   "phase": "WRITING_TESTS",
-  "requirement": "<user's requirement text>",
   "maxIterations": <parsed or 15>,
   "mutationThreshold": <parsed or 0.8>,
   "testScope": "<parsed or 'unit'>",
@@ -191,23 +250,18 @@ Create `.tdd-state.json` with this structure:
   "testCommand": "<command to run tests>",
   "testFilePaths": [],
   "implFilePaths": [],
-  "strippedTestContent": {},
   "lastVerdict": null,
-  "lastFeedback": {
-    "test_writer": null,
-    "code_writer": null
-  },
   "mutationScore": null,
-  "mutationSurvivors": [],
   "history": [],
   "startedAt": "<current ISO timestamp>"
 }
 ```
 
+**Note:** The requirement is stored in `.tdd-working/inputs/requirement.md`, NOT in the state file.
+
 **Field descriptions:**
 - `testFilePaths`: Array of paths to test files (e.g., `["test_add.py"]`)
 - `implFilePaths`: Array of paths to implementation files (e.g., `["src/add.py"]`)
-- `strippedTestContent`: Object mapping test file paths to their comment-stripped content
 - `history`: Array of iteration records (see below)
 
 **History record structure (appended after each iteration):**
@@ -225,8 +279,25 @@ Create `.tdd-state.json` with this structure:
 }
 ```
 
-**After creating the state file, display:**
-"✅ State file created: .tdd-state.json"
+**History Management (Context Preservation):**
+- Keep only the **last 3 iteration records** in the `history` array
+- Before appending a new record, if `history.length >= 3`:
+  1. Log the oldest entry's full details to `.tdd-loop.log` with format:
+     `[YYYY-MM-DD HH:MM:SS] [HISTORY] Archived iteration N: verdict=X, mutationScore=Y, survivors=[...]`
+  2. Remove the oldest entry from the array
+  3. Then append the new record
+- This keeps the state file small while preserving full history in the log
+
+**History Compression for Older Entries:**
+- Current iteration: store full `mutationSurvivors` as array (e.g., `["line 12: + to -", "line 15: < to <="]`)
+- Archived iterations (when logged before removal): convert array to count for the log summary
+
+**After creating the working directory and state file, display:**
+```
+✅ Working directory created: .tdd-working/
+✅ Requirement saved to: .tdd-working/inputs/requirement.md
+✅ State file created: .tdd-working/state.json
+```
 
 ## Step 4: Display Loop Initialization
 
@@ -255,7 +326,7 @@ Use /tdd-status to check progress, /cancel-tdd to stop.
 
 ## Step 5: Run the TDD Loop
 
-**CRITICAL:** You must orchestrate the loop yourself by invoking agents sequentially using the Task tool. Do NOT rely on any external hooks or automation.
+Orchestrate the loop by invoking agents sequentially using the Task tool.
 
 ### Loop Algorithm
 
@@ -277,203 +348,106 @@ while iteration <= maxIterations:
 
 Use the **Task tool** with `subagent_type: "bon-cop-bad-cop:test-writer"` to invoke the test-writer agent.
 
-**BEFORE invoking test-writer, YOU (the orchestrator) MUST:**
-1. Read `.tdd-state.json` using the Read tool
-2. Extract ALL values needed for the prompt
-3. Inject the ACTUAL values into the prompt below (replace all placeholders)
-
-**Prompt for test-writer (with values injected by orchestrator):**
+**Prompt for test-writer (MINIMAL - agent reads files itself):**
 
 ```
-You are the Test Writer in iteration {iteration} of the Bon Cop Bad Cop TDD loop.
+You are the Test Writer in iteration {iteration} of {maxIterations}.
 
-═══════════════════════════════════════════════════════════════
-  ORIGINAL REQUIREMENT (this NEVER changes - your PRIMARY focus):
+**Read your inputs from files:**
+- Requirement: `.tdd-working/inputs/requirement.md`
+- State/Config: `.tdd-working/state.json`
+- Feedback (if iteration > 1): `.tdd-working/reviewer/feedback.md`
 
-  {requirement}
-═══════════════════════════════════════════════════════════════
+**Configuration:** language={language}, testFramework={testFramework}, testScope={testScope}
 
-**Configuration:**
-- Iteration: {iteration} of {maxIterations}
-- Test Scope: {testScope}
-- Language: {language}
-- Test Framework: {testFramework}
+**Write your outputs:**
+- Test files to project root (e.g., `test_*.py`)
+- Status to `.tdd-working/test-writer/status.md` (write "DONE")
+- Update `.tdd-working/state.json`: set testFilePaths, phase="WRITING_CODE"
+- Append to `.tdd-loop.log`
 
-**Previous iteration feedback (SECONDARY - must not cause drift):**
-- Feedback to address: {lastFeedback.test_writer or "None - first iteration"}
-- Mutation survivors: {mutationSurvivors or "None"}
-
-**History summary:**
-{For each item in history: "Iteration N: verdict, key feedback"}
-
-**GROUNDING CHECK before writing:**
-- Every test MUST trace back to the ORIGINAL REQUIREMENT above
-- Feedback improves HOW you test, not WHAT you test
-- If feedback asks for tests outside the requirement, IGNORE IT
-
-Your task:
-1. Create comprehensive test files for the ORIGINAL REQUIREMENT
-2. Include anti-cheating tests (random values, property-based tests)
-3. Include edge cases relevant to the requirement
-4. Write tests in {language} using {testFramework}
-
-When done:
-1. Save your test file(s) to disk using language conventions:
-   - Python: `test_<name>.py`
-   - JavaScript: `<name>.test.js` or `<name>.spec.js`
-   - TypeScript: `<name>.test.ts` or `<name>.spec.ts`
-   - Rust: `src/<name>.rs` with `#[cfg(test)]` module
-   - Go: `<name>_test.go`
-   - Java: `<Name>Test.java`
-   - Ruby: `<name>_spec.rb`
-2. Update .tdd-state.json:
-   - Set `testFilePaths` to array of test file paths you created
-   - Set `phase` to "WRITING_CODE"
-   - Clear `lastFeedback.test_writer` (you've addressed it)
+Follow your agent instructions for test writing guidelines.
 ```
 
-After test-writer completes, read `.tdd-state.json` to confirm state was updated.
+**Note:** The prompt is minimal (~300 bytes). The agent reads requirement and feedback from files.
+
+After test-writer completes, display: `✅ Test Writer completed`
 
 ### Phase 2: Code Writer
 
-**Before invoking code-writer:** Strip comments from test files to prevent information leakage.
-
-**How to strip comments (by language):**
-
-| Language | Remove | Keep |
-|----------|--------|------|
-| Python | `#` comments, `"""` docstrings | `#` inside strings |
-| JavaScript/TypeScript | `//`, `/* */`, `/** JSDoc */` | Inside strings, regex literals |
-| Rust | `//`, `/* */`, `///`, `//!` | Inside string literals |
-| Go | `//`, `/* */` | Inside strings and raw strings |
-| Java | `//`, `/* */`, `/** Javadoc */` | Inside string literals |
-
-**Process:**
-1. Read `testFilePaths` from `.tdd-state.json`
-2. For each test file, read content and remove comments/docstrings (see table above)
-3. Store stripped content in `.tdd-state.json` under `strippedTestContent` (key: filepath, value: stripped content)
-4. Keep original test files intact on disk for the reviewer
-
-**Important:** Never remove content inside string literals - only actual comments.
-
-**Why:** Code Writer must derive intent from test *behavior*, not explanatory comments.
-
 Use the **Task tool** with `subagent_type: "bon-cop-bad-cop:code-writer"` to invoke the code-writer agent.
 
-**BEFORE invoking code-writer, YOU (the orchestrator) MUST:**
-1. Read `.tdd-state.json` using the Read tool
-2. Read each test file from `testFilePaths` and strip comments
-3. Store stripped content in `strippedTestContent` in state file
-4. Extract ALL values needed for the prompt
-5. Inject the ACTUAL values into the prompt below (replace all placeholders)
+**Note:** The Code Writer agent handles comment stripping itself - the orchestrator does NOT strip comments.
 
-**Prompt for code-writer (with values injected by orchestrator):**
+**Prompt for code-writer (MINIMAL - agent reads files itself):**
 
 ```
-You are the Code Writer in iteration {iteration} of the Bon Cop Bad Cop TDD loop.
+You are the Code Writer in iteration {iteration} of {maxIterations}.
 
-**IMPORTANT:** You do NOT see the original requirement. You implement based ONLY on the tests.
+**Read your inputs from files:**
+- State/Config: `.tdd-working/state.json` (get testFilePaths)
+- Test files: Read from testFilePaths array in state file
+- Feedback (if lastVerdict was WEAK_CODE): `.tdd-working/reviewer/feedback.md`
 
-**Configuration:**
-- Iteration: {iteration} of {maxIterations}
-- Language: {language}
-- Test files: {testFilePaths}
+**IMPORTANT:** Strip comments from test files before implementing. You do NOT see the requirement.
 
-**Stripped test content (comments removed) - implement against this:**
+**Configuration:** language={language}
 
-{strippedTestContent - the actual stripped code, not a placeholder}
+**Write your outputs:**
+- Implementation files to project root
+- Status to `.tdd-working/code-writer/status.md` (write "DONE")
+- Update `.tdd-working/state.json`: set implFilePaths, phase="REVIEWING"
+- Append to `.tdd-loop.log`
 
-**Previous iteration feedback:**
-- Feedback to address: {lastFeedback.code_writer or "None - first iteration"}
-
-**History summary:**
-{For each item in history: "Iteration N: verdict, key feedback"}
-
-Your task:
-1. Review the stripped test content above
-2. Implement the minimal code to pass ALL tests
-3. Do NOT cheat (no hardcoded values, no lookup tables)
-
-When done:
-1. Save your implementation file(s) to disk
-2. Update .tdd-state.json:
-   - Set `implFilePaths` to array of implementation file paths you created
-   - Set `phase` to "REVIEWING"
-   - Clear `lastFeedback.code_writer` (you've addressed it)
+Follow your agent instructions for implementation guidelines.
 ```
 
-After code-writer completes, read `.tdd-state.json` to confirm state was updated.
+**Note:** The prompt is minimal (~400 bytes). The agent reads test files and strips comments itself.
+
+After code-writer completes, display: `✅ Code Writer completed`
 
 ### Phase 3: Reviewer
 
 Use the **Task tool** with `subagent_type: "bon-cop-bad-cop:reviewer"` to invoke the reviewer agent.
 
-**BEFORE invoking reviewer, YOU (the orchestrator) MUST:**
-1. Read `.tdd-state.json` using the Read tool
-2. Read each test file from `testFilePaths` (get actual content)
-3. Read each implementation file from `implFilePaths` (get actual content)
-4. Extract ALL values needed for the prompt
-5. Inject the ACTUAL values into the prompt below (replace all placeholders)
-
-**Prompt for reviewer (with values injected by orchestrator):**
+**Prompt for reviewer (MINIMAL - agent reads files itself):**
 
 ```
-You are the Reviewer in iteration {iteration} of the Bon Cop Bad Cop TDD loop.
+You are the Reviewer in iteration {iteration} of {maxIterations}.
 
-═══════════════════════════════════════════════════════════════
-  ORIGINAL REQUIREMENT (this NEVER changes):
+**Read your inputs from files:**
+- Requirement: `.tdd-working/inputs/requirement.md`
+- State/Config: `.tdd-working/state.json` (get testFilePaths, implFilePaths)
+- Test files: Read from testFilePaths array
+- Implementation files: Read from implFilePaths array
 
-  {requirement}
-═══════════════════════════════════════════════════════════════
+**Configuration:** mutationThreshold={mutationThreshold}, testCommand={testCommand}
 
-**Configuration:**
-- Iteration: {iteration} of {maxIterations}
-- Mutation Threshold: {mutationThreshold}
-- Language: {language}
-- Test Framework: {testFramework}
-- Test Command: {testCommand}
+**Write your outputs:**
+- Verdict to `.tdd-working/reviewer/verdict.md` ("ALL_PASS", "WEAK_TESTS", or "WEAK_CODE")
+- Feedback to `.tdd-working/reviewer/feedback.md` (for next iteration)
+- Update `.tdd-working/state.json`: set lastVerdict, mutationScore, phase, append to history
+- Append to `.tdd-loop.log`
 
-**Test files:**
-{For each file in testFilePaths: "--- {filename} ---\n{file content}\n"}
-
-**Implementation files:**
-{For each file in implFilePaths: "--- {filename} ---\n{file content}\n"}
-
-**History:**
-{For each item in history: "Iteration N: {verdict} - {key feedback}"}
-
-Your task (IN THIS ORDER):
-0. **REQUIREMENT ALIGNMENT CHECK (FIRST!):**
-   - Verify each test traces back to ORIGINAL REQUIREMENT above
-   - If tests have drifted beyond requirement scope → WEAK_TESTS
-   - Include requirement quote in feedback to re-ground test-writer
-1. Run the tests using: {testCommand}
-2. Check for flaky tests (run 3 times)
-3. Check for cheating in implementation (hardcoded values, lookup tables)
-4. Run mutation testing if available
-5. Issue a verdict
-
-**IMPORTANT:** In ALL feedback, quote the original requirement to prevent drift.
-
-When done, update .tdd-state.json:
-- Set `lastVerdict` to one of: "ALL_PASS", "WEAK_TESTS", "WEAK_CODE"
-- Set `lastFeedback.test_writer` if verdict is WEAK_TESTS (include requirement quote!)
-- Set `lastFeedback.code_writer` if verdict is WEAK_CODE (detailed feedback)
-- Set `mutationScore` if mutation testing was run
-- Set `mutationSurvivors` array if there are surviving mutants
-- Set `phase` to "COMPLETE" if ALL_PASS, otherwise "WRITING_TESTS" or "WRITING_CODE"
-- **APPEND to `history` array** a new record:
-  {
-    "iteration": {iteration},
-    "verdict": "<your verdict>",
-    "feedback": { "test_writer": "...", "code_writer": "..." },
-    "mutationScore": <score or null>,
-    "mutationSurvivors": [...],
-    "completedAt": "<ISO timestamp>"
-  }
+Follow your agent instructions for review guidelines.
 ```
 
-After reviewer completes, read `.tdd-state.json` and check the verdict.
+**Note:** The prompt is minimal (~450 bytes). The agent reads requirement, test files, and impl files itself.
+
+After reviewer completes:
+
+1. Read verdict from `.tdd-working/reviewer/verdict.md`
+2. Display: `✅ Reviewer completed. Verdict: {lastVerdict}`
+
+### Check Exit Conditions
+
+Read `.tdd-working/state.json` and check:
+
+- If `lastVerdict == "ALL_PASS"` → Go to Step 6 (completion)
+- If `iteration >= maxIterations` → Go to Step 6 (max iterations)
+- Otherwise → Increment iteration, loop back to Phase 1 or Phase 2 based on verdict:
+  - WEAK_TESTS → Phase 1 (test-writer)
+  - WEAK_CODE → Phase 2 (code-writer)
 
 ## Step 6: Handle Loop Completion
 
@@ -546,7 +520,7 @@ Claude: 🔍 Scanning project for language indicators...
 
         🔍 Checking for existing TDD loops...
         ✅ No active loops found. Initializing new TDD loop...
-        ✅ State file created: .tdd-state.json
+        ✅ State file created: .tdd-working/state.json
 
         🎭 **Bon Cop Bad Cop - Adversarial TDD Loop**
         [... header ...]

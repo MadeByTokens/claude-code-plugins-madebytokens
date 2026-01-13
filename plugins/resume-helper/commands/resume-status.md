@@ -1,8 +1,6 @@
 ---
 description: Check the status of the current resume development loop
 allowed-tools: Read
-allowed-file-patterns:
-  - ".resume-state.json:*"
 ---
 
 # Resume Status Command
@@ -11,7 +9,7 @@ Display the current status of the resume development loop.
 
 ## Instructions
 
-1. Read `.resume-state.json` from the current working directory
+1. Read `working/state.json` from the current working directory
 
 2. If file doesn't exist:
    ```
@@ -30,27 +28,23 @@ RESUME DEVELOPMENT STATUS
 ═══════════════════════════════════════════════════
 
 Status: ACTIVE
-Phase: [WRITING | REVIEWING | COACHING]
+Phase: [WRITING | FACT_CHECK | REVIEWING | ANALYZING | COACHING]
 Iteration: [X] of [maxIterations]
 
 Started: [timestamp]
-Experience File: [path]
-Job Description: [path or "Not provided"]
+Experience File: working/inputs/experience.md
+Job Description: [working/inputs/job_description.md or "Not provided"]
 
 Last Verdict: [verdict or "N/A"]
 
-Progress:
-┌──────────┬─────────────────┬────────────────────┐
-│ Iteration│ Verdict         │ Key Changes        │
-├──────────┼─────────────────┼────────────────────┤
-│ 1        │ NEEDS_GROUNDING │ Initial draft      │
-│ 2        │ NEEDS_WORK      │ Added metrics      │
-│ ...      │ ...             │ ...                │
-└──────────┴─────────────────┴────────────────────┘
-
-Outstanding Concerns:
-- [From last interviewer review]
-- [...]
+Working Directory:
+  working/
+  ├── inputs/              # Your input files
+  ├── writer/              # Current resume in output.md
+  ├── fact_checker/        # Verification reports
+  ├── interviewer/         # Review feedback
+  ├── analysis/            # Analysis results
+  └── coach/               # Coach assessment and questions
 
 Commands:
 - Continue: The loop will auto-resume
@@ -74,10 +68,8 @@ Completed: [timestamp]
 
 Output Files:
 - Resume: [output path]
-- Interview Prep: interview_prep.md
-
-Summary:
-[Brief description of the final state]
+- Interview Prep: working/output/interview_prep.md
+- Coach Assessment: working/coach/assessment.md
 
 To start a new loop: /resume-helper:resume-loop "experience.md"
 ═══════════════════════════════════════════════════
@@ -93,9 +85,8 @@ RESUME DEVELOPMENT STATUS
 Status: BLOCKED - Waiting for User Input
 Iteration: [X]
 
-The Coach has requested additional information:
-
-[Questions from coach]
+The Coach has requested additional information.
+See: working/coach/questions.md
 
 Please provide this information, then the loop will continue.
 ═══════════════════════════════════════════════════
@@ -103,13 +94,23 @@ Please provide this information, then the loop will continue.
 
 ## State File Reference
 
-Key fields to display:
+Key fields in `working/state.json`:
 - `active`: Whether loop is running
-- `phase`: Current phase (WRITING, REVIEWING, COACHING, COMPLETE)
+- `phase`: Current phase (INITIALIZED, WRITING, FACT_CHECK, REVIEWING, ANALYZING, COACHING, COMPLETE)
 - `iteration`: Current iteration number
-- `options.maxIterations`: Maximum iterations allowed
+- `maxIterations`: Maximum iterations allowed
+- `maxPages`: Page limit (1, 2, or 3)
+- `maxWords`: Word limit (450, 900, or 1350)
 - `lastVerdict`: Most recent coach verdict
-- `history`: Array of past iterations with verdicts
+- `factCheckAttempts`: Current fact-check retry count
 - `startedAt`: When loop started
-- `completedAt`: When loop finished (if complete)
-- `stoppedReason`: Why loop stopped (ready, max_iterations, cancelled, error)
+
+## Working Directory Files
+
+For more details, check these files:
+- `working/writer/output.md` - Current resume draft
+- `working/writer/status.md` - Writer status (DONE/BLOCKED)
+- `working/fact_checker/verdict.md` - Fact check result (PASS/FAIL)
+- `working/interviewer/verdict.md` - Interviewer verdict
+- `working/coach/verdict.md` - Coach verdict
+- `working/coach/questions.md` - Outstanding questions for user

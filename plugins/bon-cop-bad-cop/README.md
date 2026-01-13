@@ -10,12 +10,32 @@ Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), 
 
 See https://github.com/MadeByTokens/claude-code-plugins-madebytokens
 
-### Option B: Direct Install
+### Option B: CLI Flag at Launch
 
 ```bash
-# Clone and install directly
+# Clone the repo
 git clone https://github.com/MadeByTokens/bon-cop-bad-cop.git
-/plugin install ./bon-cop-bad-cop
+
+# Launch Claude Code with the plugin directory
+claude --plugin-dir /path/to/bon-cop-bad-cop
+```
+
+### Option C: Manual Settings Configuration
+
+Clone the repo, then add it to your Claude Code settings file:
+
+**User scope** (`~/.claude/settings.json`):
+```json
+{
+  "pluginDirs": ["/path/to/bon-cop-bad-cop"]
+}
+```
+
+**Project scope** (`.claude/settings.json` in your project):
+```json
+{
+  "pluginDirs": ["/path/to/bon-cop-bad-cop"]
+}
 ```
 
 ## Quick Start
@@ -215,6 +235,8 @@ bon-cop-bad-cop/
 │   ├── tdd-status.md
 │   ├── cancel-tdd.md
 │   └── help.md
+├── examples/                 # Example requirements
+│   └── parse_duration_requirement.md
 └── README.md
 ```
 
@@ -226,9 +248,10 @@ bon-cop-bad-cop/
 - **Mutation Testing** - Ensures tests actually catch bugs
 - **Cheating Detection** - Identifies hardcoded/lookup table implementations
 - **Flakiness Detection** - Runs tests multiple times
-- **State Persistence** - Loop state saved in `.tdd-state.json`
+- **State Persistence** - Loop state saved in `.tdd-working/state.json`
 - **Requirement Grounding** - Original requirement re-injected every iteration to prevent drift
 - **Trail Log** - Detailed audit log in `.tdd-loop.log` for debugging and verification
+- **Context Management** - Optimized for long-running loops (up to 15 iterations) without exhausting context window
 
 ## Built-in Capabilities
 
@@ -244,11 +267,17 @@ Analyzes implementation code for patterns indicating gaming rather than genuine 
 ### Flaky Test Detection (in Reviewer)
 Runs test suite 3 times and compares results. Any test with inconsistent outcomes is flagged as flaky and must be fixed before proceeding.
 
-### Comment Stripping (in tdd-loop orchestrator)
-Removes comments and docstrings from test files before Code Writer sees them. Supports Python, JavaScript/TypeScript, Rust, Go, Java, and C/C++. This ensures Code Writer derives intent from test *behavior*, not explanatory comments.
+### Comment Stripping (in Code Writer agent)
+The Code Writer strips comments and docstrings from test files before implementing. Supports Python, JavaScript/TypeScript, Rust, Go, Java, and C/C++. This ensures Code Writer derives intent from test *behavior*, not explanatory comments.
 
 ### Requirement Alignment Check (in Reviewer)
 Every iteration, the Reviewer verifies that tests still align with the original requirement. If tests have drifted beyond scope, the loop corrects back to the original requirement.
+
+### Context Management (in all agents and orchestrator)
+The plugin is designed for long-running loops without exhausting the context window:
+- **Minimal agent responses** - Agents write verbose output to `.tdd-loop.log` and return only brief confirmations
+- **History truncation** - Only the 3 most recent iterations are kept in `.tdd-state.json`; older iterations are archived to the log file
+- **Log as primary record** - The `.tdd-loop.log` file contains complete history, mutation survivors, and detailed analysis
 
 ## Requirements
 
@@ -273,21 +302,18 @@ cargo install cargo-mutants
 
 ### "Unknown slash command: tdd-loop"
 
-Make sure the plugin is installed:
-```bash
-# Check installed plugins
-/plugin list
+Make sure the plugin is loaded. Either:
+- Restart Claude Code with `claude --plugin-dir /path/to/bon-cop-bad-cop`
+- Or add `pluginDirs` to your settings.json (see Installation above)
 
-# If not installed:
-/plugin install /path/to/bon-cop-bad-cop
-```
+### Loop stops unexpectedly
 
-### Loop stops after first agent
-
-This is expected if the Task tool invocations aren't working correctly. Check:
-- `.tdd-state.json` has `"active": true`
-- All agent files exist in `agents/`
-- Run `/bon-cop-bad-cop:tdd-status` to see current state
+If the loop stops before reaching ALL_PASS or max iterations:
+1. Check `.tdd-state.json` - verify `"active": true` and check `lastVerdict`
+2. Check `.tdd-loop.log` for error messages or the last recorded action
+3. Run `/bon-cop-bad-cop:tdd-status` to see current state
+4. The loop should continue automatically after each verdict unless ALL_PASS or max iterations reached
+5. If it stops mid-loop, try running `/bon-cop-bad-cop:tdd-loop` again - it will detect the active state
 
 ### Tests not running / Mutation testing skipped
 

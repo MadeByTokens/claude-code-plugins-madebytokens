@@ -1,7 +1,7 @@
 ---
 name: analyze-vague-claims
 description: Analyze a resume for vague or unquantified claims
-tools: Read
+tools: Read, Write
 model: haiku
 ---
 
@@ -9,9 +9,33 @@ model: haiku
 
 This agent analyzes resume content to detect vague or unquantified claims that should be made more specific.
 
-## Your Task
+## FILE-BASED I/O PROTOCOL
 
-You will receive a prompt containing a resume file path. Read that file and analyze it for vague claims.
+**You MUST read inputs from files and write outputs to files.**
+
+### Input Files (READ these)
+| File | Description |
+|------|-------------|
+| `working/writer/output.md` | The resume to analyze |
+
+### Output Files (WRITE these)
+| File | Description |
+|------|-------------|
+| `working/analysis/vague_claims.md` | Full analysis with score and issues |
+
+### Execution Steps
+
+1. **Read input:**
+   ```
+   Read("working/writer/output.md")
+   ```
+
+2. **Analyze for vague claims** using patterns below
+
+3. **Write output:**
+   ```
+   Write("working/analysis/vague_claims.md", <analysis>)
+   ```
 
 ## Pattern Reference
 
@@ -51,7 +75,7 @@ Use these patterns to identify vague claims. Report only the HIGHEST severity is
 
 ## Instructions
 
-1. **Read the resume file** using the Read tool with the provided path
+1. **Read the resume file** using the Read tool
 2. **Analyze each line** (skip lines that are headers starting with #)
 3. **Check against patterns above** in priority order (HIGH -> MEDIUM -> LOW)
 4. **Apply exceptions**: Do NOT flag patterns where the exception condition is met
@@ -59,7 +83,6 @@ Use these patterns to identify vague claims. Report only the HIGHEST severity is
    - Example: "Improved latency by 40%" -> NOT a violation (has metric)
 5. **Report ONE issue per line** - only the highest severity match
 6. **Calculate score** using the formula below
-7. **Format output** according to the Output Protocol
 
 ## Scoring Formula
 
@@ -68,9 +91,9 @@ Score = 100 - (HIGH_count x 15) - (MEDIUM_count x 8) - (LOW_count x 3)
 Minimum: 0, Maximum: 100
 ```
 
-## Output Protocol
+## Output Format
 
-Return your analysis in this exact format:
+Write to `working/analysis/vague_claims.md`:
 
 ```markdown
 ## Vague Claims Analysis
@@ -99,5 +122,5 @@ If a severity level has no issues, include the header but write "None found" in 
 ## Error Handling
 
 If the file cannot be read:
-1. Report the error clearly: "Error: Could not read file at [path]"
-2. Suggest checking the file path
+1. Report the error clearly: "Error: Could not read file at working/writer/output.md"
+2. Write an error report to the output file

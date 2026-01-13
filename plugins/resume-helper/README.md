@@ -32,12 +32,32 @@ Two key insights:
 
 See https://github.com/MadeByTokens/claude-code-plugins-madebytokens
 
-### Option B: Direct Install
+### Option B: CLI Flag at Launch
 
 ```bash
-# Clone and install directly
+# Clone the repo
 git clone https://github.com/MadeByTokens/resume-helper.git
-/plugin install ./resume-helper
+
+# Launch Claude Code with the plugin directory
+claude --plugin-dir /path/to/resume-helper
+```
+
+### Option C: Manual Settings Configuration
+
+Clone the repo, then add it to your Claude Code settings file:
+
+**User scope** (`~/.claude/settings.json`):
+```json
+{
+  "pluginDirs": ["/path/to/resume-helper"]
+}
+```
+
+**Project scope** (`.claude/settings.json` in your project):
+```json
+{
+  "pluginDirs": ["/path/to/resume-helper"]
+}
 ```
 ---
 
@@ -96,9 +116,9 @@ The Coach will ask clarifying questions to strengthen your resume:
 ### 4. Get Your Output
 
 - `resume_final.md` - Your polished resume
-- `interview_prep.md` - Preparation guide with likely questions
-- `resume_development_log.md` - Full audit trail of the development process
-- `candidate_additions.md` - Your answers to Coach questions (preserved for future use)
+- `working/output/interview_prep.md` - Preparation guide with likely questions
+- `working/coach/assessment.md` - Full audit trail of the development process
+- `working/inputs/candidate_additions.md` - Your answers to Coach questions (preserved for future use)
 
 ---
 
@@ -120,7 +140,7 @@ The Coach will ask clarifying questions to strengthen your resume:
 | `--max-iterations` | 5 | Maximum improvement cycles |
 | `--max-pages` | 1 | Maximum resume pages: 1, 2, or 3 (prompts for confirmation if not specified) |
 | `--output <file>` | `./resume_final.md` | Output path for final resume |
-| `--format` | `ats` | Format: `traditional`, `modern`, `ats` |
+| `--premium` | false | Use Opus model for Coach agent (higher quality synthesis, higher cost) |
 
 ---
 
@@ -162,6 +182,48 @@ flowchart LR
 
 ---
 
+## Architecture: File-Based Message Passing
+
+All agents communicate through files in a `working/` directory. This prevents context window exhaustion in long development loops.
+
+```
+working/
+├── inputs/                      # Your input files (read-only after setup)
+│   ├── experience.md            # Original experience
+│   ├── job_description.md       # JD (if provided)
+│   └── candidate_additions.md   # Your answers to questions
+├── writer/
+│   ├── output.md                # Current resume draft
+│   ├── notes.md                 # Writer's internal notes
+│   └── status.md                # "DONE" or "BLOCKED"
+├── fact_checker/
+│   ├── report.md                # Full verification report
+│   └── verdict.md               # "PASS" or "FAIL"
+├── interviewer/
+│   ├── review.md                # Full review
+│   └── verdict.md               # "STRONG_CANDIDATE/NEEDS_WORK/RED_FLAGS"
+├── analysis/
+│   ├── vague_claims.md          # Vague language detection
+│   ├── buzzwords.md             # Corporate jargon detection
+│   ├── ats_compatibility.md     # ATS score and keyword matching
+│   └── quantification.md        # Questions to quantify achievements
+├── coach/
+│   ├── assessment.md            # Full assessment
+│   ├── feedback.md              # Feedback for Writer (next iteration)
+│   ├── questions.md             # Questions for you
+│   └── verdict.md               # "READY/NEEDS_STRENGTHENING/etc"
+├── output/
+│   └── interview_prep.md        # Interview preparation guide
+└── state.json                   # Loop state (iteration, phase, etc.)
+```
+
+The orchestrator stays lean by:
+- Only reading small verdict/status files (not full outputs)
+- Passing minimal prompts to agents
+- Letting agents read/write their own files directly
+
+---
+
 ## Analysis Agents
 
 Before each coaching phase, the system runs analysis agents in parallel that provide objective metrics:
@@ -173,7 +235,7 @@ Before each coaching phase, the system runs analysis agents in parallel that pro
 | `check-ats-compatibility` | Checks ATS compatibility, keyword matching, and page limits |
 | `suggest-quantification` | Suggests questions to quantify achievements |
 
-These agents run in parallel for faster analysis. Results are passed to the Coach agent who synthesizes them with the Interviewer's review to provide actionable guidance.
+These agents run in parallel for faster analysis. Results are written to `working/analysis/` and read by the Coach agent who synthesizes them with the Interviewer's review.
 
 ---
 
@@ -184,29 +246,13 @@ The system ensures your resume only contains what you actually provided:
 1. **Every claim is verified** - Numbers, achievements, technologies, dates—all traced back to your input
 2. **No invented details** - If you said "led team" without a size, it stays "led team" (not "led team of 8")
 3. **3-strike rule** - If the Writer hallucinates, it gets 3 attempts to fix before escalating to you
-4. **Fresh file reads** - Writer and Fact-Checker read your files fresh from disk each time (not from memory). This prevents context corruption in long conversations.
-5. **Answers preserved** - When you answer Coach questions, your answers are saved to `candidate_additions.md`. The Writer and Fact-Checker read this file alongside your original input, so nothing you provide gets lost.
+4. **Fresh file reads** - Writer and Fact-Checker read your files fresh from disk each iteration (from `working/inputs/`)
+5. **Answers preserved** - When you answer Coach questions, your answers are saved to `working/inputs/candidate_additions.md`
 
 If the Writer keeps adding invented details, you'll be asked to either:
 - Provide the missing information
 - Explicitly allow vague claims
 - Accept the resume as-is with warnings
-
----
-
-## Development Log
-
-Every resume development session generates a detailed audit trail in `resume_development_log.md`:
-
-- **Timestamp for each action** - Know exactly when each phase completed
-- **Iteration tracking** - See how the resume evolved over multiple iterations
-- **Fact-check results** - Record of all hallucination checks (pass/fail)
-- **Analysis scores** - Vague claims, buzzwords, ATS compatibility scores per iteration
-- **Coach verdicts** - Each verdict with summary
-- **User interactions** - Questions asked and answers provided
-- **Final summary** - Complete overview of the development process
-
-This log provides full transparency into the AI's decision-making process.
 
 ---
 
@@ -242,6 +288,8 @@ This log provides full transparency into the AI's decision-making process.
 
 **File errors** - Use quoted paths for spaces, ensure files are UTF-8 text (not PDF).
 
+**Context exhaustion** - The file-based architecture should prevent this. If you still encounter issues, try reducing `--max-iterations`.
+
 ---
 
 ## Contributing
@@ -252,6 +300,16 @@ Contributions welcome! Some ideas:
 - **Industry-specific keyword sets** for ATS matching
 - **Bug fixes** and edge case handling
 - **Documentation** improvements
+
+### Developer Notes
+
+**Premium Agent Generation:** The `coach-premium.md` agent is auto-generated from `coach.md`. After modifying `coach.md`, run:
+
+```bash
+./scripts/generate-premium-agents.sh
+```
+
+This creates `agents/coach-premium.md` with `model: opus` instead of `model: sonnet`.
 
 ---
 

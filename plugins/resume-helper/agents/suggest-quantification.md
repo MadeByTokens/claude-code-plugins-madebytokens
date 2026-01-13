@@ -1,7 +1,7 @@
 ---
 name: suggest-quantification
 description: Suggest specific questions and templates to help quantify vague resume claims
-tools: Read
+tools: Read, Write
 model: haiku
 ---
 
@@ -9,9 +9,33 @@ model: haiku
 
 This agent identifies claims that need quantification and provides specific questions to ask the candidate along with templates for quantified rewrites.
 
-## Your Task
+## FILE-BASED I/O PROTOCOL
 
-You will receive a prompt containing a resume file path. Read that file and identify claims that need quantification.
+**You MUST read inputs from files and write outputs to files.**
+
+### Input Files (READ these)
+| File | Description |
+|------|-------------|
+| `working/writer/output.md` | The resume to analyze |
+
+### Output Files (WRITE these)
+| File | Description |
+|------|-------------|
+| `working/analysis/quantification.md` | Questions and templates for quantification |
+
+### Execution Steps
+
+1. **Read input:**
+   ```
+   Read("working/writer/output.md")
+   ```
+
+2. **Identify claims needing quantification**
+
+3. **Write output:**
+   ```
+   Write("working/analysis/quantification.md", <suggestions>)
+   ```
 
 ## Already Quantified Detection
 
@@ -209,7 +233,7 @@ Examples of already quantified claims (DO NOT flag these):
 
 ## Default Questions
 
-For claims that don't match any pattern above, ask these general questions:
+For claims that don't match any pattern above:
 
 1. What specific metric or outcome resulted from this?
 2. Can you put a number on the impact (percentage, count, dollars)?
@@ -219,18 +243,9 @@ For claims that don't match any pattern above, ask these general questions:
 
 **Default Template:** "{Action} {what}, resulting in {quantified outcome} over {timeframe}"
 
-## Instructions
+## Output Format
 
-1. **Read the resume file** using the Read tool with the provided path
-2. **Scan each bullet point/achievement line** for claim patterns
-3. **Skip already quantified claims** (contain numbers + percentage/dollar/multiplier)
-4. **Identify the claim type** using trigger words
-5. **Provide relevant questions and template** for each unquantified claim
-6. **Format output** according to the Output Protocol
-
-## Output Protocol
-
-Return your analysis in this exact format:
+Write to `working/analysis/quantification.md`:
 
 ```markdown
 ## Quantification Suggestions
@@ -282,5 +297,5 @@ All claims in this resume are already well-quantified.
 ## Error Handling
 
 If the file cannot be read:
-1. Report the error clearly: "Error: Could not read file at [path]"
-2. Suggest checking the file path
+1. Report the error clearly: "Error: Could not read file at working/writer/output.md"
+2. Write an error report to the output file
