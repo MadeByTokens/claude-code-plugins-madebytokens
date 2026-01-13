@@ -14,14 +14,14 @@ To install this plugin marketplace in Claude Code:
    https://github.com/MadeByTokens/claude-code-plugins-madebytokens.git
    ```
 
-3. **Install plugins** from the marketplace by running `/plugin` again and browsing the available plugins.
+2. **Install plugins** from the marketplace by running `/plugin` again and browsing the available plugins.
 
 ## Available Plugins
 
 | Plugin | Description | Repository | Version |
 |--------|-------------|------------|---------|
-| [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.7.1 |
-| [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.5.1 |
+| [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.7.3 |
+| [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.6.0 |
 
 ## Adding a New Plugin
 
