@@ -17,6 +17,13 @@
       "repository": "../bon-cop-bad-cop",
       "description": "Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest",
       "version": "0.6.0"
+    },
+    {
+      "name": "claude-chess",
+      "source": "./plugins/claude-chess",
+      "repository": "https://github.com/MadeByTokens/claude-chess",
+      "description": "AI chess opponent using three-agent deliberation system with genuine information isolation. Strategist proposes moves, Devil's Advocate critiques, Arbiter decides.",
+      "version": "1.2.0"
     }
   ]
 }
