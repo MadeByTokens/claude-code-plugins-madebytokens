@@ -30,7 +30,7 @@
       "source": "./plugins/claude-brainstorm",
       "repository": "https://github.com/MadeByTokens/claude-brainstorm",
       "description": "Creative brainstorming partner for generating ideas, exploring possibilities, and divergent thinking. Transforms Claude from solution-finder into thought partner.",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

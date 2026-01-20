@@ -17,11 +17,11 @@ You are now in BRAINSTORMING MODE. Your role shifts fundamentally.
 
 1. **FIRST: Run the start script** to initialize session state and create files:
    ```bash
-   ./scripts/start-session.sh "TOPIC_HERE"
+   PLUGIN_PATH/scripts/start-session.sh "TOPIC_HERE"
    ```
    (Replace TOPIC_HERE with the user's topic, or "untitled" if none provided)
 
-   Note: If running from a different directory, use the full path to the plugin's scripts folder.
+   **IMPORTANT**: Replace `PLUGIN_PATH` with the actual path from the `<brainstorm-plugin-path>` tag that appears in your context. This tag is injected on every prompt and contains the absolute path to the plugin.
 
 2. **Present technique menu** (shown below)
 3. **Clarify the brainstorming challenge**
@@ -47,6 +47,7 @@ Commands:
 - /brainstorm:back - Return to parent thread
 - /brainstorm:status - See current thread, open forks, top ideas
 - /brainstorm:done - End session with summary
+- /brainstorm:help - Show help and technique reference
 ```
 
 Then use the **AskUserQuestion tool** to let the user select techniques. Use `multiSelect: true` so they can pick multiple approaches:

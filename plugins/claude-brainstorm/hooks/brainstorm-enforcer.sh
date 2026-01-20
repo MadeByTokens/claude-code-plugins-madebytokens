@@ -1,10 +1,17 @@
 #!/bin/bash
 # Brainstorm mode enforcer hook
-# Checks if brainstorm mode is active and injects rules reminder
+# Outputs plugin path always, and injects rules reminder when session is active
+
+# Get the plugin root directory (this script is in hooks/, so parent is plugin root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 
 STATE_FILE="./.brainstorm-state"
 
-# Exit silently if no active session
+# Always output plugin path so Claude knows where scripts are
+echo "<brainstorm-plugin-path>$PLUGIN_ROOT</brainstorm-plugin-path>"
+
+# Exit if no active session (but we already output the path above)
 if [ ! -f "$STATE_FILE" ]; then
     exit 0
 fi
@@ -36,6 +43,20 @@ ALWAYS:
 - Offer wildly different perspectives
 - Label perspective shifts explicitly
 - Log ideas to the session file silently
+
+FORK CHECK (do this every response):
+- Watch for ideas or tangents that deserve deeper exploration
+- If you spot a fork-worthy moment, use AskUserQuestion to offer it:
+  - Options: "Fork into [specific topic]" / "Keep exploring here"
+- Fork-worthy signals: user excitement, rich sub-topic, "what if" that opens new avenue, analogy worth pursuing
+- Don't over-suggest: skip if you suggested a fork recently or the thread is still fresh
+
+WEB SEARCH (use proactively, not as last resort):
+- Search early and often for inspiration, analogies, and real-world examples
+- Good triggers: exploring a new angle, "how does [other industry] handle this?",
+  finding precedents, checking if an idea already exists, sparking new directions
+- Look to other domains: nature, gaming, healthcare, aviation, retail, etc.
+- Don't wait until stuck - search to ADD momentum, not just when losing it
 
 Commands available to user:
 - /brainstorm:fork <topic> - branch into a tangent
