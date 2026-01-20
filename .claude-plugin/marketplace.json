@@ -24,6 +24,13 @@
       "repository": "https://github.com/MadeByTokens/claude-chess",
       "description": "AI chess opponent using three-agent deliberation system with genuine information isolation. Strategist proposes moves, Devil's Advocate critiques, Arbiter decides.",
       "version": "1.2.0"
+    },
+    {
+      "name": "claude-brainstorm",
+      "source": "./plugins/claude-brainstorm",
+      "repository": "https://github.com/MadeByTokens/claude-brainstorm",
+      "description": "Creative brainstorming partner for generating ideas, exploring possibilities, and divergent thinking. Transforms Claude from solution-finder into thought partner.",
+      "version": "1.0.0"
     }
   ]
 }
