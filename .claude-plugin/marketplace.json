@@ -31,6 +31,13 @@
       "repository": "https://github.com/MadeByTokens/claude-brainstorm",
       "description": "Creative brainstorming partner for generating ideas, exploring possibilities, and divergent thinking. Transforms Claude from solution-finder into thought partner.",
       "version": "1.1.0"
+    },
+    {
+      "name": "claude-prd-god",
+      "source": "./plugins/claude-prd-god",
+      "repository": "https://github.com/MadeByTokens/claude-prd-god",
+      "description": "Product Requirements Document generator. Transforms brainstorm ideas into complete, professional PRDs with interactive section-by-section refinement.",
+      "version": "1.0.0"
     }
   ]
 }

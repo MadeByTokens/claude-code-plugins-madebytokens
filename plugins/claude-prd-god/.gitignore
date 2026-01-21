@@ -1,0 +1,8 @@
+# Claude Code local settings
+.claude
+
+# PRD session state (temporary)
+.prd-state
+
+# Generated PRD documents (uncomment to keep them out of version control)
+# prd-*.md
