@@ -22,9 +22,9 @@ To install this plugin marketplace in Claude Code:
 |--------|-------------|------------|---------|
 | [resume-helper](./plugins/resume-helper) | Adversarial multi-agent resume development - creates compelling AND honest resumes | [GitHub](https://github.com/MadeByTokens/resume-helper) | 0.7.3 |
 | [bon-cop-bad-cop](./plugins/bon-cop-bad-cop) | Three-agent adversarial TDD loop: Test Writer (bad cop), Code Writer (suspect), and Reviewer (good cop) work together while keeping each other honest | [GitHub](https://github.com/MadeByTokens/bon-cop-bad-cop) | 0.6.0 |
-| [claude-chess](./plugins/claude-chess) | AI chess opponent using three-agent deliberation system with genuine information isolation. Strategist proposes moves, Devil's Advocate critiques, Arbiter decides. | [GitHub](https://github.com/MadeByTokens/claude-chess) | 1.2.0 |
-| [claude-brainstorm](./plugins/claude-brainstorm) | Creative brainstorming partner for generating ideas, exploring possibilities, and divergent thinking. Transforms Claude from solution-finder into thought partner. | [GitHub](https://github.com/MadeByTokens/claude-brainstorm) | 1.1.0 |
-| [claude-prd-god](./plugins/claude-prd-god) | Product Requirements Document generator. Transforms brainstorm ideas into complete, professional PRDs with interactive section-by-section refinement. | [GitHub](https://github.com/MadeByTokens/claude-prd-god) | 1.0.0 |
+| [claude-chess](./plugins/claude-chess) | AI chess opponent using three-agent deliberation system with genuine information isolation. Strategist proposes moves, Devil's Advocate critiques, Arbiter decides. | [GitHub](https://github.com/MadeByTokens/claude-chess) | 1.2.1 |
+| [claude-brainstorm](./plugins/claude-brainstorm) | Creative brainstorming partner for generating ideas, exploring possibilities, and divergent thinking. Transforms Claude from solution-finder into thought partner. | [GitHub](https://github.com/MadeByTokens/claude-brainstorm) | 1.1.1 |
+| [claude-prd-god](./plugins/claude-prd-god) | Product Requirements Document generator. Transforms brainstorm ideas into complete, professional PRDs with interactive section-by-section refinement. | [GitHub](https://github.com/MadeByTokens/claude-prd-god) | 1.0.1 |
 
 ## Adding a New Plugin
 

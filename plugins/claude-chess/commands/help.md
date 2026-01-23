@@ -17,7 +17,6 @@ COMMANDS:
   /chess:play      Start a new game or continue current one
   /chess:status    Show current board and game state
   /chess:analyze   Post-game analysis of moves
-  /chess:learn     Extract lessons to memory
   /chess:help      This help message
 
 QUICK START:

@@ -1,3 +1,5 @@
+<img width="1024" height="506" alt="image" src="https://github.com/user-attachments/assets/a665eac4-06f0-4e0e-aadb-c5d455d9c2cd" />
+
 # Claude Chess
 
 **An experiment in multi-agent architecture, not a chess engine.**
@@ -90,7 +92,6 @@ Or add to your Claude Code settings for permanent access.
 /chess:play      Start a new game or continue current one
 /chess:status    Show board and game state
 /chess:analyze   Post-game analysis
-/chess:learn     Extract lessons to memory
 /chess:help      Show available commands
 ```
 
@@ -168,7 +169,6 @@ Used as a "clutch" for specific checks (count attackers, pawn structure), not th
 │   ├── play.md                  # Main orchestrator (uses Task tool)
 │   ├── status.md
 │   ├── analyze.md
-│   ├── learn.md
 │   └── help.md
 ├── scripts/
 │   ├── chess_server.py          # MCP server exposing chess tools

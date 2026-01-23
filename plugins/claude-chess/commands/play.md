@@ -66,32 +66,52 @@ Show brief game info when asking: opponent type, our color, turn number, who's t
 
 ## Step 2: New Game Setup
 
-Use AskUserQuestion to gather parameters:
+Use AskUserQuestion to gather parameters. **IMPORTANT: Ask in two rounds due to conditional logic.**
 
-### Question 1: Opponent Type
+### Round 1: Ask ONLY Opponent Type (single question)
+
+**Question: Opponent Type**
 - **You (Human)**: You play against the AI - enter your moves when prompted
 - **Stockfish**: Stockfish engine plays against the AI (for testing/analysis)
 
-### Question 1b: Stockfish Level (only if Stockfish selected)
-- **Beginner (1)**: Very weak, blunders often
-- **Intermediate (8)**: Club player level
-- **Expert (17)**: Master level
-- **Maximum (20)**: Full strength (~3200 ELO)
+**Wait for response before proceeding.**
 
-User can select "Other" to enter a custom value 0-20.
+### Round 2: Ask remaining questions (based on Round 1 answer)
 
-### Question 2: AI Color (what color does the three-agent AI play?)
-- **White**: AI plays white, you play black
-- **Black**: AI plays black, you play white
+**If Stockfish was selected**, ask these 4 questions together:
+1. **Stockfish Level**
+   - Beginner (1): Very weak, blunders often
+   - Intermediate (8): Club player level
+   - Expert (17): Master level
+   - Maximum (20): Full strength (~3200 ELO)
+   - User can select "Other" to enter a custom value 0-20
 
-### Question 3: Skill Level
-- **Beginner**: 1 candidate, no critique
-- **Casual**: 2 candidates, light critique
-- **Club** (default): 3 candidates, full critique
-- **Expert**: 3+ candidates, aggressive critique
+2. **AI Color** (what color does the three-agent AI play?)
+   - White: AI plays white, Stockfish plays black
+   - Black: AI plays black, Stockfish plays white
 
-### Question 4: Personality
-- Silent, Friendly Coach, Cocky Grandmaster, Nervous Amateur, Dramatic Narrator, Vintage Hustler
+3. **Skill Level**
+   - Beginner: 1 candidate, no critique
+   - Casual: 2 candidates, light critique
+   - Club (default): 3 candidates, full critique
+   - Expert: 3+ candidates, aggressive critique
+
+4. **Personality**
+   - Silent, Friendly Coach, Cocky Grandmaster, Nervous Amateur, Dramatic Narrator, Vintage Hustler
+
+**If Human was selected**, ask these 3 questions together (skip Stockfish Level):
+1. **AI Color** (what color does the three-agent AI play?)
+   - White: AI plays white, you play black
+   - Black: AI plays black, you play white
+
+2. **Skill Level**
+   - Beginner: 1 candidate, no critique
+   - Casual: 2 candidates, light critique
+   - Club (default): 3 candidates, full critique
+   - Expert: 3+ candidates, aggressive critique
+
+3. **Personality**
+   - Silent, Friendly Coach, Cocky Grandmaster, Nervous Amateur, Dramatic Narrator, Vintage Hustler
 
 ### Randomized Parameters (don't ask user)
 
@@ -215,7 +235,6 @@ After valid move, call `chess_move(uci)`, `chess_gui()`, then loop to Step 4.
 
 1. Announce result
 2. Call `chess_gui()` for final position
-3. Suggest `/chess:learn`
 
 ## Information Isolation
 

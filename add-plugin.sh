@@ -276,6 +276,30 @@ update_readme_version() {
     return 0
 }
 
+# Resolve repository URL - handles relative paths by getting actual remote origin
+resolve_repo_url() {
+    local url="$1"
+
+    # If it's already a proper git URL, return as-is
+    if [[ "$url" =~ ^(git@|https://) ]]; then
+        echo "$url"
+        return 0
+    fi
+
+    # It's a relative path - try to get the actual remote origin
+    if [[ -d "$url" && -d "$url/.git" ]]; then
+        local remote_url=$(git -C "$url" remote get-url origin 2>/dev/null)
+        if [[ -n "$remote_url" ]]; then
+            echo "$remote_url"
+            return 0
+        fi
+    fi
+
+    # Couldn't resolve, return original
+    echo "$url"
+    return 1
+}
+
 # Update an existing plugin (fetch latest + update versions)
 update_plugin() {
     local plugin_name="$1"
@@ -298,17 +322,25 @@ update_plugin() {
 
     # Get current version and repository URL
     local current_version=$(jq -r --arg name "$plugin_name" '.plugins[] | select(.name == $name) | .version' "$MARKETPLACE_FILE")
-    local git_url=$(jq -r --arg name "$plugin_name" '.plugins[] | select(.name == $name) | .repository' "$MARKETPLACE_FILE")
+    local stored_url=$(jq -r --arg name "$plugin_name" '.plugins[] | select(.name == $name) | .repository' "$MARKETPLACE_FILE")
 
-    if [[ -z "$git_url" || "$git_url" == "null" ]]; then
+    if [[ -z "$stored_url" || "$stored_url" == "null" ]]; then
         print_error "No repository URL found for plugin '$plugin_name' in marketplace.json"
         echo "Please add a 'repository' field to the plugin entry."
         exit 1
     fi
 
+    # Resolve the URL (handles relative paths)
+    local git_url=$(resolve_repo_url "$stored_url")
+
     echo "Plugin: $plugin_name"
     echo "Current version: $current_version"
-    echo "Repository: $git_url"
+    if [[ "$stored_url" != "$git_url" ]]; then
+        echo "Stored path: $stored_url"
+        echo "Resolved to: $git_url"
+    else
+        echo "Repository: $git_url"
+    fi
     echo ""
 
     # Create temp directory for cloning
@@ -319,6 +351,9 @@ update_plugin() {
     print_info "Fetching latest version from remote..."
     if ! git clone --depth 1 "$git_url" "$temp_dir/plugin" 2>&1; then
         print_error "Failed to clone repository."
+        if [[ "$stored_url" != "$git_url" ]]; then
+            print_warning "Note: Resolved '$stored_url' to '$git_url'"
+        fi
         exit 1
     fi
     print_success "Latest version fetched successfully."

@@ -79,7 +79,7 @@ Based on the situation, suggest:
 
 - If it's our turn: "Use /chess:play to continue and make your next move"
 - If waiting for opponent: "Waiting for opponent's move. Use /chess:play to check for updates"
-- If game is over: "Game ended. Use /chess:analyze for post-game analysis or /chess:learn to extract lessons"
+- If game is over: "Game ended. Use /chess:analyze for post-game analysis"
 
 ## Output Format
 

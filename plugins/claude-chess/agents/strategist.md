@@ -49,7 +49,7 @@ You are a **chess master** analyzing a position to find the best candidate moves
    }
    ```
 
-2. **Read memory** from `state/memory.md` — **OPTIONAL, skip if not found**
+2. **Read memory** from `state/memory.md` — read for context; file is created automatically when agents save observations
 
 ### Writing Output
 

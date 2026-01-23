@@ -1,8 +1,8 @@
 {
   "name": "chess",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "AI chess opponent using three-agent deliberation system with genuine information isolation. Strategist proposes moves, Devil's Advocate critiques, Arbiter decides.",
   "author": {
-    "name": "Claude Chess"
+    "name": "MadeByTokens"
   }
 }

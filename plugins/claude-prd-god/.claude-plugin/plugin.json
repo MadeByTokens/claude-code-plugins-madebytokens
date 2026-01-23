@@ -1,8 +1,8 @@
 {
   "name": "prd",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Product Requirements Document generator. Transforms brainstorm ideas into complete, professional PRDs with interactive section-by-section refinement.",
   "author": {
-    "name": "Claude PRD"
+    "name": "MadeByTokens"
   }
 }

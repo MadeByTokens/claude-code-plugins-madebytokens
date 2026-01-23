@@ -19,25 +19,25 @@
       "version": "0.6.0"
     },
     {
-      "name": "claude-chess",
+      "name": "chess",
       "source": "./plugins/claude-chess",
-      "repository": "https://github.com/MadeByTokens/claude-chess",
+      "repository": "../claude-chess",
       "description": "AI chess opponent using three-agent deliberation system with genuine information isolation. Strategist proposes moves, Devil's Advocate critiques, Arbiter decides.",
-      "version": "1.2.0"
+      "version": "1.2.1"
     },
     {
-      "name": "claude-brainstorm",
+      "name": "brainstorm",
       "source": "./plugins/claude-brainstorm",
-      "repository": "https://github.com/MadeByTokens/claude-brainstorm",
+      "repository": "../claude-brainstorm",
       "description": "Creative brainstorming partner for generating ideas, exploring possibilities, and divergent thinking. Transforms Claude from solution-finder into thought partner.",
-      "version": "1.1.0"
+      "version": "1.1.1"
     },
     {
-      "name": "claude-prd-god",
+      "name": "prd",
       "source": "./plugins/claude-prd-god",
-      "repository": "https://github.com/MadeByTokens/claude-prd-god",
+      "repository": "../claude-prd-god",
       "description": "Product Requirements Document generator. Transforms brainstorm ideas into complete, professional PRDs with interactive section-by-section refinement.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ]
 }

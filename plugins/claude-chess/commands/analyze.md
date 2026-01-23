@@ -185,9 +185,9 @@ Practice tactical puzzles focusing on discovered attacks and
 piece coordination. The opening was fine; tactics need work.
 ```
 
-## Integration with Learn Command
+## Memory Integration
 
-After analysis, suggest running `/chess:learn` to extract and store the lessons in memory.md for future games.
+Key lessons from the game can be saved to memory.md through the agents' `remember` arrays during gameplay. The Strategist reads this file for context on future moves.
 
 ## Analyzing External Games
 
